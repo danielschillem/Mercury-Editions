@@ -1,0 +1,35 @@
+stages:
+  - test
+  - secret-detection
+
+include:
+  - template: Security/SAST.gitlab-ci.yml
+  - template: Security/Secret-Detection.gitlab-ci.yml
+
+variables:
+  SECRET_DETECTION_ENABLED: 'true'
+
+backend_sanity:
+  stage: test
+  image: php:8.4-cli
+  before_script:
+    - apt-get update -qq && apt-get install -yqq unzip curl
+    - curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
+  script:
+    - composer validate --no-check-publish
+    - php -l app/Http/Controllers/CustomerAuthController.php
+    - php -l app/Http/Controllers/OrderController.php
+    - php -l app/Http/Controllers/PaymentController.php
+
+frontend_build:
+  stage: test
+  image: node:20
+  script:
+    - npm ci
+    - npm run build
+
+sast:
+  stage: test
+
+secret_detection:
+  stage: secret-detection

@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="200" height="280" viewBox="0 0 200 280">
+  <rect width="200" height="280" fill="#1a1a2e" rx="8"/>
+  <rect x="20" y="40" width="160" height="140" fill="#2d2d6b" rx="4"/>
+  <text x="100" y="200" text-anchor="middle" fill="#8b8bc8" font-size="14" font-family="system-ui, sans-serif">Couverture</text>
+  <text x="100" y="220" text-anchor="middle" fill="#8b8bc8" font-size="14" font-family="system-ui, sans-serif">non disponible</text>
+  <circle cx="100" cy="100" r="30" fill="none" stroke="#4a4ab8" stroke-width="2"/>
+  <path d="M100 80 L100 95 M100 105 L100 120 M80 100 L95 100 M105 100 L120 100" stroke="#4a4ab8" stroke-width="2" stroke-linecap="round"/>
+</svg>

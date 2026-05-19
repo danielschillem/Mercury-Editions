@@ -1,0 +1,23 @@
+{
+  "name": "Mercury Editions",
+  "short_name": "Mercury",
+  "description": "Librairie numérique du Burkina Faso",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#FFFBF0",
+  "theme_color": "#B91C1C",
+  "icons": [
+    {
+      "src": "/images/logo/logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/images/logo/logo-100.jpg",
+      "sizes": "100x100",
+      "type": "image/jpeg"
+    }
+  ]
+}
