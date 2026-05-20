@@ -7,6 +7,7 @@ This project deploys from GitHub Actions to a DigitalOcean droplet through SSH. 
 Set these in GitHub: `Settings` -> `Secrets and variables` -> `Actions` -> `Secrets`.
 
 - `SSH_PRIVATE_KEY`: private key allowed to SSH into the droplet
+- `SSH_PRIVATE_KEY_B64`: preferred alternative to `SSH_PRIVATE_KEY`; base64-encoded private key, avoids multiline formatting issues
 - `APP_KEY`: Laravel app key for production
 
 ## Built-in Defaults
