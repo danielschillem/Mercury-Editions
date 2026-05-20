@@ -53,6 +53,14 @@ class PaymentController extends Controller
             ]);
         }
 
+        if (empty(config('orangemoney.api_username')) || empty(config('orangemoney.api_password'))) {
+            return response()->json([
+                'status'    => 'error',
+                'errorCode' => 'MISCONFIGURED',
+                'message'   => 'Paiement Orange Money non configuré. Contactez l\'administrateur.',
+            ], 503);
+        }
+
         $endpoint = config('orangemoney.env') === 'prod'
             ? config('orangemoney.url_prod')
             : config('orangemoney.url_test');

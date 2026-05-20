@@ -13,7 +13,10 @@ trait ResolvesBookReaderAccess
 {
     private function findAccessibleEbookPurchase(Request $request, Book $book): ?OrderItem
     {
-        $token = trim((string) $request->query('token', ''));
+        $authHeader = (string) $request->header('Authorization', '');
+        $token = str_starts_with($authHeader, 'Bearer ')
+            ? trim(substr($authHeader, 7))
+            : trim((string) $request->query('token', ''));
 
         if ($token !== '') {
             $tokenPurchase = OrderItem::query()

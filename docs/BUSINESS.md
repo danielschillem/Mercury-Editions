@@ -19,13 +19,15 @@
 
 ### 1.1 Contexte
 
-Le Burkina Faso possède un patrimoine littéraire riche mais peu accessible au grand public. Les œuvres des auteurs burkinabè sont souvent difficiles à trouver, que ce soit en format physique ou numérique. Mercury Editions répond à ce besoin en proposant une plateforme de commerce électronique dédiée à la littérature burkinabè.
+Le Burkina Faso possède un patrimoine littéraire riche mais peu accessible au grand public. Les œuvres des auteurs burkinabè sont souvent difficiles à trouver, que ce soit en format physique ou numérique. Mercury Editions répond à ce besoin en devenant une maison d'édition et de diffusion: sélection des textes, accompagnement éditorial, fabrication des livres, vente, lecture numérique et circulation auprès des lecteurs.
 
 ### 1.2 Vision
 
 **"Lire le Burkina, lire le monde"**
 
-Mercury Editions ambitionne de devenir la référence pour l'accès à la littérature burkinabè et ouest-africaine, en combinant :
+Mercury Editions ambitionne de devenir la référence pour l'édition et l'accès à la littérature burkinabè et ouest-africaine, en combinant :
+- Une ligne éditoriale claire portée par des collections identifiables
+- Un accompagnement des auteurs, du manuscrit à la publication
 - Un catalogue de qualité mettant en valeur les auteurs locaux
 - Une expérience d'achat simplifiée adaptée au contexte africain
 - Un système de paiement mobile (Orange Money) populaire au Burkina Faso
@@ -37,6 +39,8 @@ Mercury Editions ambitionne de devenir la référence pour l'accès à la litté
 |----------|------------|------------|
 | Visibilité des auteurs | Nombre d'auteurs référencés | 6 auteurs |
 | Richesse du catalogue | Nombre de livres disponibles | 12 livres |
+| Structuration éditoriale | Collections fondatrices | 3 collections |
+| Relation auteurs | Délai de réponse manuscrit | < 30 jours |
 | Conversion | Taux d'achat après visite | > 5% |
 | Satisfaction client | Avis positifs | > 80% |
 

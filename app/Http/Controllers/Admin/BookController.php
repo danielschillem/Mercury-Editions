@@ -29,7 +29,7 @@ class BookController extends Controller
 
     public function index(): JsonResponse
     {
-        return response()->json(Book::with('author')->orderBy('id')->get());
+        return response()->json(Book::with(['author', 'editorialCollection'])->orderBy('id')->get());
     }
 
     public function store(Request $request): JsonResponse
@@ -37,6 +37,7 @@ class BookController extends Controller
         $validated = $request->validate([
             'title'       => ['required', 'string', 'max:255'],
             'author_id'   => ['nullable', 'exists:authors,id'],
+            'editorial_collection_id' => ['nullable', 'exists:editorial_collections,id'],
             'author_name' => ['required', 'string', 'max:255'],
             'price'       => ['required', 'integer', 'min:0'],
             'category'    => ['required', 'string', 'max:30'],
@@ -48,27 +49,30 @@ class BookController extends Controller
             'ebook_pdf'   => ['nullable', 'file', 'mimes:pdf', 'max:30720'],
             'ebook_epub'  => ['nullable', 'file', 'mimes:epub', 'max:30720'],
             'year'        => ['required', 'integer', 'min:1800', 'max:2100'],
+            'publication_date' => ['nullable', 'date'],
             'pages'       => ['required', 'integer', 'min:1'],
             'publisher'   => ['required', 'string', 'max:255'],
+            'editorial_director' => ['nullable', 'string', 'max:120'],
             'language'    => ['required', 'string', 'max:30'],
             'isbn'        => ['required', 'string', 'max:30', 'unique:books'],
             'tags'        => ['required', 'array'],
             'description' => ['required', 'string'],
             'summary'     => ['required', 'string'],
+            'public_excerpt' => ['nullable', 'string', 'max:12000'],
             'quote'       => ['required', 'string'],
         ]);
 
         $this->persistUploads($request, $validated);
 
         $book = Book::create($validated);
-        $book->load('author');
+        $book->load(['author', 'editorialCollection']);
 
         return response()->json($book, 201);
     }
 
     public function show(Book $book): JsonResponse
     {
-        $book->load('author');
+        $book->load(['author', 'editorialCollection']);
 
         return response()->json($book);
     }
@@ -78,6 +82,7 @@ class BookController extends Controller
         $validated = $request->validate([
             'title'       => ['sometimes', 'string', 'max:255'],
             'author_id'   => ['nullable', 'exists:authors,id'],
+            'editorial_collection_id' => ['nullable', 'exists:editorial_collections,id'],
             'author_name' => ['sometimes', 'string', 'max:255'],
             'price'       => ['sometimes', 'integer', 'min:0'],
             'category'    => ['sometimes', 'string', 'max:30'],
@@ -89,20 +94,23 @@ class BookController extends Controller
             'ebook_pdf'   => ['nullable', 'file', 'mimes:pdf', 'max:30720'],
             'ebook_epub'  => ['nullable', 'file', 'mimes:epub', 'max:30720'],
             'year'        => ['sometimes', 'integer', 'min:1800', 'max:2100'],
+            'publication_date' => ['nullable', 'date'],
             'pages'       => ['sometimes', 'integer', 'min:1'],
             'publisher'   => ['sometimes', 'string', 'max:255'],
+            'editorial_director' => ['nullable', 'string', 'max:120'],
             'language'    => ['sometimes', 'string', 'max:30'],
             'isbn'        => ['sometimes', 'string', 'max:30', 'unique:books,isbn,' . $book->id],
             'tags'        => ['sometimes', 'array'],
             'description' => ['sometimes', 'string'],
             'summary'     => ['sometimes', 'string'],
+            'public_excerpt' => ['nullable', 'string', 'max:12000'],
             'quote'       => ['sometimes', 'string'],
         ]);
 
         $this->persistUploads($request, $validated);
 
         $book->update($validated);
-        $book->load('author');
+        $book->load(['author', 'editorialCollection']);
 
         return response()->json($book);
     }

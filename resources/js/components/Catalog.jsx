@@ -58,6 +58,8 @@ function includesSearch(book, rawQuery) {
     book?.language,
     book?.isbn,
     book?.category,
+    book?.editorial_collection?.name,
+    book?.editorial_collection?.slug,
     ...safeTags(book),
   ].filter(Boolean);
 
@@ -224,6 +226,11 @@ export default function Catalog() {
                     <span className="book-rating"><Icon name="star" size={12} /> {book.rating}</span>
                     <span className="book-category">{book.category}</span>
                   </div>
+                  {book.editorial_collection && (
+                    <div className="book-collection-label" style={{ color: book.editorial_collection.color || 'var(--mercury-red)' }}>
+                      {book.editorial_collection.name}
+                    </div>
+                  )}
                   <div className="format-selector" onClick={e => e.stopPropagation()}>
                     <button className={`format-opt${fmt === 'ebook' ? ' selected' : ''}`} onClick={e => { e.stopPropagation(); selectFormat(book.id, 'ebook'); }}><Icon name="smartphone" size={13} /> eBook</button>
                     <button className={`format-opt${fmt === 'physical' ? ' selected' : ''}`} onClick={e => { e.stopPropagation(); selectFormat(book.id, 'physical'); }}><Icon name="package" size={13} /> Papier</button>
@@ -286,6 +293,7 @@ function getSimilarBooks(book, allBooks) {
     .map(b => {
       let score = 0;
       if (b.category === book.category) score += 40;
+      if (b.editorial_collection?.id && b.editorial_collection.id === book.editorial_collection?.id) score += 30;
       if (b.author_name === book.author_name) score += 35;
       score += safeTags(b).filter(t => sourceTags.includes(t)).length * 12;
 
@@ -351,6 +359,9 @@ export function BookDetail({ bookId, onClose }) {
 
   const similar = getSimilarBooks(book, books);
   const authorData = authors.find(a => a.id === book.author_id);
+  const publicationLabel = book.publication_date
+    ? new Date(`${book.publication_date}T00:00:00`).toLocaleDateString('fr-FR', { year: 'numeric', month: 'long', day: 'numeric' })
+    : book.year;
 
   const handleAdd = () => {
     addToCart(book.id, format);
@@ -426,10 +437,15 @@ export function BookDetail({ bookId, onClose }) {
             </div>
             <div className="detail-meta-grid">
               <div className="detail-meta-item"><div className="detail-meta-value">{book.pages}</div><div className="detail-meta-label">Pages</div></div>
-              <div className="detail-meta-item"><div className="detail-meta-value">{book.year}</div><div className="detail-meta-label">Année</div></div>
+              <div className="detail-meta-item"><div className="detail-meta-value">{book.publication_date ? new Date(`${book.publication_date}T00:00:00`).getFullYear() : book.year}</div><div className="detail-meta-label">Parution</div></div>
               <div className="detail-meta-item"><div className="detail-meta-value">{book.price.toLocaleString()}</div><div className="detail-meta-label">FCFA</div></div>
               <div className="detail-meta-item"><div className="detail-meta-value">{CATEGORY_LABELS[book.category] || book.category}</div><div className="detail-meta-label">Genre</div></div>
             </div>
+            {book.editorial_collection && (
+              <div className="detail-collection-badge" style={{ borderColor: book.editorial_collection.color || 'rgba(255,255,255,0.3)' }}>
+                <Icon name="layers" size={15} /> Collection {book.editorial_collection.name}
+              </div>
+            )}
             <div className="detail-actions">
               <div className="format-selector" style={{ marginBottom: '0.75rem', width: '100%', display: 'flex', gap: '0.5rem' }}>
                 <button className="format-opt" onClick={() => setFormat('ebook')}
@@ -490,6 +506,7 @@ export function BookDetail({ bookId, onClose }) {
           <div className="detail-tabs">
             <button className={`detail-tab${tab === 'desc' ? ' active' : ''}`} onClick={() => setTab('desc')}>Description</button>
             <button className={`detail-tab${tab === 'resume' ? ' active' : ''}`} onClick={() => setTab('resume')}>Résumé</button>
+            {book.public_excerpt && <button className={`detail-tab${tab === 'excerpt' ? ' active' : ''}`} onClick={() => setTab('excerpt')}>Extrait</button>}
             <button className={`detail-tab${tab === 'specs' ? ' active' : ''}`} onClick={() => setTab('specs')}>Détails</button>
             <button className={`detail-tab${tab === 'reviews' ? ' active' : ''}`} onClick={() => setTab('reviews')}>Avis lecteurs</button>
           </div>
@@ -513,11 +530,19 @@ export function BookDetail({ bookId, onClose }) {
               </div>
             </div>
           )}
+          {tab === 'excerpt' && book.public_excerpt && (
+            <div className="detail-tab-content active">
+              <div className="detail-description">
+                <h3>Extrait public</h3>
+                <div className="detail-public-excerpt">{book.public_excerpt}</div>
+              </div>
+            </div>
+          )}
           {tab === 'specs' && (
             <div className="detail-tab-content active">
               <div className="detail-description"><h3>Informations techniques</h3></div>
               <div className="detail-specs">
-                {[['Titre', book.title], ['Auteur', book.author_name], ['Éditeur', book.publisher], ['Année', book.year], ['Pages', book.pages], ['Langue', book.language], ['ISBN', book.isbn], ['Catégorie', CATEGORY_LABELS[book.category] || book.category], ['Format', 'eBook (PDF, EPUB)'], ['Prix', `${book.price.toLocaleString()} FCFA`]].map(([label, value]) => (
+                {[['Titre', book.title], ['Auteur', book.author_name], ['Collection', book.editorial_collection?.name || 'Non assignée'], ['Direction éditoriale', book.editorial_director || 'Non renseignée'], ['Éditeur', book.publisher], ['Date de parution', publicationLabel], ['Année catalogue', book.year], ['Pages', book.pages], ['Langue', book.language], ['ISBN', book.isbn], ['Catégorie', CATEGORY_LABELS[book.category] || book.category], ['Format', 'eBook (PDF, EPUB)'], ['Prix', `${book.price.toLocaleString()} FCFA`]].map(([label, value]) => (
                   <div key={label} className="spec-item"><span className="spec-label">{label}</span><span className="spec-value">{value}</span></div>
                 ))}
               </div>

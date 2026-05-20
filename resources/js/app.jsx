@@ -10,6 +10,7 @@ import ErrorBoundary from './components/ErrorBoundary';
 import AnnouncementBanner from './components/AnnouncementBanner';
 import Navbar from './components/Navbar';
 import Hero from './components/Hero';
+import PublishingHouse from './components/PublishingHouse';
 
 // Lazy loaded components pour performance
 const FeaturedSection = lazy(() => import('./components/FeaturedSection'));
@@ -25,6 +26,7 @@ const Reader = lazy(() => import('./components/Reader'));
 const AuthModal = lazy(() => import('./components/AuthModal'));
 const AccountPage = lazy(() => import('./components/AccountPage'));
 const ContactModal = lazy(() => import('./components/ContactModal'));
+const ManuscriptSubmissionModal = lazy(() => import('./components/ManuscriptSubmissionModal'));
 
 // Loading skeleton pour lazy components
 function SectionLoader() {
@@ -97,13 +99,20 @@ function Footer() {
                     <div className="nav-logo">
                         <img src="/images/logo/logo.png" alt="Mercury Editions" className="nav-logo-img" />
                     </div>
-                    <p>La première plateforme dédiée aux auteurs burkinabè. Découvrez, achetez et lisez des œuvres littéraires du Burkina Faso.</p>
+                    <p>Maison d'édition burkinabè: nous publions, accompagnons et diffusons des livres papier et numériques portés par les voix du Faso.</p>
                 </div>
                 <div className="footer-col">
                     <h4>Navigation</h4>
                     <a href="#accueil" onClick={(e) => { e.preventDefault(); scrollToSection('accueil'); }}>Accueil</a>
+                    <a href="#maison" onClick={(e) => { e.preventDefault(); scrollToSection('maison'); }}>Maison d'édition</a>
                     <a href="#auteurs" onClick={(e) => { e.preventDefault(); scrollToSection('auteurs'); }}>Auteurs</a>
                     <a href="#catalogue" onClick={(e) => { e.preventDefault(); scrollToSection('catalogue'); }}>Catalogue</a>
+                </div>
+                <div className="footer-col">
+                    <h4>Édition</h4>
+                    <a href="#" onClick={(e) => { e.preventDefault(); openModal('manuscriptSubmission'); }}>Soumettre un manuscrit</a>
+                    <a href="mailto:droits@mercury-editions.bf">Droits & diffusion</a>
+                    <a href="#maison" onClick={(e) => { e.preventDefault(); scrollToSection('maison'); }}>Nos collections</a>
                 </div>
                 <div className="footer-col">
                     <h4>Contact</h4>
@@ -176,6 +185,7 @@ function App() {
             <AnnouncementBanner />
             <Navbar />
             <Hero />
+            <PublishingHouse />
             <ErrorBoundary>
                 <Suspense fallback={<SectionLoader />}>
                     <FeaturedSection />
@@ -214,6 +224,7 @@ function App() {
                 {activeModal === 'auth' && <AuthModal onClose={closeModal} intent={modalData} />}
                 {activeModal === 'account' && <AccountPage onClose={closeModal} initialTab={modalData || 'overview'} />}
                 {activeModal === 'contact' && <ContactModal onClose={closeModal} />}
+                {activeModal === 'manuscriptSubmission' && <ManuscriptSubmissionModal onClose={closeModal} />}
             </Suspense>
         </>
     );

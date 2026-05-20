@@ -16,6 +16,7 @@ class Book extends Model
 
     protected $fillable = [
         'author_id',
+        'editorial_collection_id',
         'title',
         'author_name',
         'price',
@@ -27,13 +28,16 @@ class Book extends Model
         'ebook_pdf_path',
         'ebook_epub_path',
         'year',
+        'publication_date',
         'pages',
         'publisher',
+        'editorial_director',
         'language',
         'isbn',
         'tags',
         'description',
         'summary',
+        'public_excerpt',
         'quote',
     ];
 
@@ -46,6 +50,7 @@ class Book extends Model
             'rating' => 'float',
             'local'  => 'boolean',
             'year'   => 'integer',
+            'publication_date' => 'date:Y-m-d',
             'pages'  => 'integer',
             'tags'   => 'array',
         ];
@@ -64,6 +69,11 @@ class Book extends Model
     public function author(): BelongsTo
     {
         return $this->belongsTo(Author::class);
+    }
+
+    public function editorialCollection(): BelongsTo
+    {
+        return $this->belongsTo(EditorialCollection::class);
     }
 
     public function reviews(): HasMany

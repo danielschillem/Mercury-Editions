@@ -22,10 +22,42 @@ const statIcons = {
       <line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
     </svg>
   ),
+  manuscripts: (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M8 21h12a2 2 0 0 0 2-2v-2H10v2a2 2 0 1 1-4 0V5a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h4z"/><path d="M10 17V3h12v14"/>
+    </svg>
+  ),
 };
 
-export default function Dashboard() {
+const manuscriptStatusLabels = {
+  received: 'Reçu',
+  reading: 'En lecture',
+  accepted: 'Accepté',
+  rejected: 'Refusé',
+  editing: 'Correction',
+  production: 'Production',
+  published: 'Publié',
+};
+
+const manuscriptStatusClass = {
+  received: 'badge-warning',
+  reading: 'badge-info',
+  accepted: 'badge-success',
+  rejected: 'badge-danger',
+  editing: 'badge-warning',
+  production: 'badge-warning',
+  published: 'badge-success',
+};
+
+const fallbackCollections = {
+  'litterature-recits': 'Littérature & récits',
+  'savoirs-societe': 'Savoirs & société',
+  'jeunesse-transmission': 'Jeunesse & transmission',
+};
+
+export default function Dashboard({ navigateToPage }) {
   const [data, setData] = useState(null);
+  const [collections, setCollections] = useState(fallbackCollections);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -35,10 +67,19 @@ export default function Dashboard() {
       .finally(() => setLoading(false));
   }, []);
 
+  useEffect(() => {
+    api.get('/admin/api/editorial-collections')
+      .then((items) => {
+        if (!Array.isArray(items) || items.length === 0) return;
+        setCollections(Object.fromEntries(items.map((collection) => [collection.slug, collection.name])));
+      })
+      .catch(() => {});
+  }, []);
+
   if (loading) return <div className="admin-loading"><div className="admin-spinner" /><span>Chargement...</span></div>;
   if (!data) return <div className="admin-empty">Impossible de charger le tableau de bord.</div>;
 
-  const { stats, recentOrders, dailyRevenue, topBooks } = data;
+  const { stats, recentOrders, dailyRevenue, topBooks, recentManuscripts = [] } = data;
 
   const fmt = (n) => new Intl.NumberFormat('fr-FR').format(n);
 
@@ -83,6 +124,30 @@ export default function Dashboard() {
           <div className="stat-card-content">
             <div className="stat-card-value stat-value-green">{fmt(stats.total_revenue)}</div>
             <div className="stat-card-label">Revenus (FCFA)</div>
+          </div>
+        </div>
+      </div>
+
+      <div className="stats-grid stats-grid-3 editorial-stats-grid">
+        <div className="stat-card stat-card-accent stat-card-editorial">
+          <div className="stat-card-icon stat-icon-red">{statIcons.manuscripts}</div>
+          <div className="stat-card-content">
+            <div className="stat-card-value">{stats.new_manuscripts || 0}</div>
+            <div className="stat-card-label">Nouveaux manuscrits</div>
+          </div>
+        </div>
+        <div className="stat-card stat-card-accent">
+          <div className="stat-card-icon stat-icon-orange">{statIcons.manuscripts}</div>
+          <div className="stat-card-content">
+            <div className="stat-card-value">{stats.active_manuscripts || 0}</div>
+            <div className="stat-card-label">Dossiers éditoriaux actifs</div>
+          </div>
+        </div>
+        <div className="stat-card stat-card-accent">
+          <div className="stat-card-icon stat-icon-purple">{statIcons.manuscripts}</div>
+          <div className="stat-card-content">
+            <div className="stat-card-value">{stats.total_manuscripts || 0}</div>
+            <div className="stat-card-label">Manuscrits reçus</div>
           </div>
         </div>
       </div>
@@ -189,6 +254,36 @@ export default function Dashboard() {
             )}
           </div>
         </div>
+      </div>
+
+      <div className="admin-card">
+        <div className="admin-card-header">
+          <span className="admin-card-title">Derniers manuscrits reçus</span>
+          <button className="btn-admin btn-secondary btn-sm" onClick={() => navigateToPage?.('manuscripts')}>Ouvrir le suivi</button>
+        </div>
+        {recentManuscripts.length === 0 ? (
+          <div className="admin-empty">Aucun manuscrit reçu pour le moment.</div>
+        ) : (
+          <div className="manuscript-dashboard-list">
+            {recentManuscripts.map((manuscript) => (
+              <div key={manuscript.id} className={`manuscript-dashboard-item${manuscript.status === 'received' ? ' is-new' : ''}`}>
+                <div className="manuscript-dashboard-main">
+                  <div className="manuscript-dashboard-title">{manuscript.title}</div>
+                  <div className="manuscript-dashboard-meta">
+                    {manuscript.author_name} · {collections[manuscript.collection] || manuscript.collection}
+                    {manuscript.genre ? ` · ${manuscript.genre}` : ''}
+                  </div>
+                </div>
+                <div className="manuscript-dashboard-side">
+                  <span className={`badge ${manuscriptStatusClass[manuscript.status] || 'badge-muted'}`}>
+                    {manuscriptStatusLabels[manuscript.status] || manuscript.status}
+                  </span>
+                  <span className="text-sm text-muted">{new Date(manuscript.created_at).toLocaleDateString('fr-FR')}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Recent orders */}

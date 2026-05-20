@@ -9,5 +9,6 @@ return [
     'license'    => 'MIT',
     'copyright'  => '© 2026 Mercury Editions. Tous droits réservés.',
     'contact'    => 'contact@mercury-editions.bf',
+    'editorial_email' => env('MERCURY_EDITORIAL_EMAIL', 'manuscrits@mercury-editions.bf'),
     'repository' => 'https://github.com/mercury-editions/mercury',
 ];

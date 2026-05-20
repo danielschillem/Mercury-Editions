@@ -7,6 +7,8 @@ import AuthorManager from './AuthorManager';
 import OrderManager from './OrderManager';
 import UserManager from './UserManager';
 import ContactMessageManager from './ContactMessageManager';
+import ManuscriptSubmissionManager from './ManuscriptSubmissionManager';
+import EditorialCollectionManager from './EditorialCollectionManager';
 
 const pages = {
   dashboard: Dashboard,
@@ -15,6 +17,8 @@ const pages = {
   orders: OrderManager,
   users: UserManager,
   messages: ContactMessageManager,
+  manuscripts: ManuscriptSubmissionManager,
+  collections: EditorialCollectionManager,
 };
 
 const icons = {
@@ -48,6 +52,16 @@ const icons = {
       <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
     </svg>
   ),
+  manuscripts: (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M8 21h12a2 2 0 0 0 2-2v-2H10v2a2 2 0 1 1-4 0V5a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h4z"/><path d="M10 17V3h12v14"/>
+    </svg>
+  ),
+  collections: (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/>
+    </svg>
+  ),
   logout: (
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>
@@ -61,6 +75,8 @@ const nav = [
   { key: 'authors',   label: 'Auteurs' },
   { key: 'orders',    label: 'Commandes' },
   { key: 'users',     label: 'Utilisateurs' },
+  { key: 'manuscripts', label: 'Manuscrits' },
+  { key: 'collections', label: 'Collections' },
   { key: 'messages',  label: 'Messages' },
 ];
 
@@ -147,7 +163,7 @@ export default function AdminApp() {
           </div>
         </header>
         <div className="admin-page-content">
-          <PageComponent currentUser={user} />
+          <PageComponent currentUser={user} navigateToPage={setPage} />
         </div>
       </main>
     </div>

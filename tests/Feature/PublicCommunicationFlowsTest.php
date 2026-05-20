@@ -4,8 +4,12 @@ declare(strict_types=1);
 
 namespace Tests\Feature;
 
+use App\Mail\ManuscriptSubmissionAdminNotification;
+use App\Mail\ManuscriptSubmissionReceipt;
+use App\Models\EditorialCollection;
 use App\Models\NewsletterSubscriber;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Mail;
 use Tests\TestCase;
 
 class PublicCommunicationFlowsTest extends TestCase
@@ -22,7 +26,7 @@ class PublicCommunicationFlowsTest extends TestCase
 
         $subscriber = NewsletterSubscriber::query()->firstOrFail();
 
-        $this->getJson("/api/newsletter/unsubscribe/{$subscriber->token}")
+        $this->postJson("/api/newsletter/unsubscribe/{$subscriber->token}")
             ->assertOk()
             ->assertJsonPath('message', 'Vous avez été désinscrit de la newsletter.');
 
@@ -62,5 +66,60 @@ class PublicCommunicationFlowsTest extends TestCase
             'email' => 'awa@example.test',
             'subject' => 'Question sur une commande',
         ]);
+    }
+
+    public function test_manuscript_submission_can_be_created(): void
+    {
+        Mail::fake();
+        config(['mercury.editorial_email' => 'manuscrits@example.test']);
+
+        $this->postJson('/api/manuscripts', [
+            'author_name' => 'Awa Sawadogo',
+            'email' => 'awa.manuscrit@example.test',
+            'phone' => '+22670123456',
+            'title' => 'Les saisons du retour',
+            'collection' => 'litterature-recits',
+            'genre' => 'Roman',
+            'page_count' => 184,
+            'manuscript_url' => 'https://example.test/manuscrit.pdf',
+            'synopsis' => 'Une jeune femme revient dans son village natal après plusieurs années de migration. Le récit suit son rapport à la famille, aux terres abandonnées, aux souvenirs politiques et aux nouvelles ambitions de la jeunesse locale.',
+            'author_note' => 'Premier roman, déjà relu par un cercle de lecteurs.',
+        ])
+            ->assertCreated()
+            ->assertJsonPath('submission.status', 'received');
+
+        $this->assertDatabaseHas('manuscript_submissions', [
+            'email' => 'awa.manuscrit@example.test',
+            'title' => 'Les saisons du retour',
+            'status' => 'received',
+        ]);
+
+        Mail::assertSent(ManuscriptSubmissionReceipt::class, function ($mail) {
+            return $mail->hasTo('awa.manuscrit@example.test')
+                && $mail->submission->title === 'Les saisons du retour';
+        });
+
+        Mail::assertSent(ManuscriptSubmissionAdminNotification::class, function ($mail) {
+            return $mail->hasTo('manuscrits@example.test')
+                && $mail->submission->email === 'awa.manuscrit@example.test';
+        });
+    }
+
+    public function test_public_editorial_collections_only_expose_active_items(): void
+    {
+        EditorialCollection::create([
+            'name' => 'Archives internes',
+            'slug' => 'archives-internes',
+            'description' => 'Collection masquée réservée aux tests.',
+            'icon' => 'library',
+            'color' => '#111827',
+            'sort_order' => 99,
+            'is_active' => false,
+        ]);
+
+        $this->getJson('/api/editorial-collections')
+            ->assertOk()
+            ->assertJsonFragment(['slug' => 'litterature-recits'])
+            ->assertJsonMissing(['slug' => 'archives-internes']);
     }
 }

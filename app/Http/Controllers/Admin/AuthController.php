@@ -19,7 +19,7 @@ class AuthController extends Controller
         ]);
 
         if (! Auth::attempt($credentials)) {
-            return response()->json(['message' => 'Identifiants incorrects.'], 422);
+            return response()->json(['message' => 'Identifiants incorrects.'], 401);
         }
 
         if (! Auth::user()->is_admin) {
@@ -30,7 +30,7 @@ class AuthController extends Controller
 
         $request->session()->regenerate();
 
-        return response()->json(['user' => Auth::user()]);
+        return response()->json(['user' => $this->safeUser(Auth::user())]);
     }
 
     public function logout(Request $request): JsonResponse
@@ -44,6 +44,16 @@ class AuthController extends Controller
 
     public function me(Request $request): JsonResponse
     {
-        return response()->json(['user' => $request->user()]);
+        return response()->json(['user' => $this->safeUser($request->user())]);
+    }
+
+    private function safeUser(\App\Models\User $user): array
+    {
+        return [
+            'id'    => $user->id,
+            'name'  => $user->name,
+            'email' => $user->email,
+            'is_admin' => (bool) $user->is_admin,
+        ];
     }
 }

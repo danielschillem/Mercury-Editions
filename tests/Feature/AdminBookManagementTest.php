@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Tests\Feature;
 
 use App\Models\Author;
+use App\Models\EditorialCollection;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
@@ -38,10 +39,12 @@ class AdminBookManagementTest extends TestCase
             'timeline' => ['1980' => 'Naissance', '2026' => 'Publication'],
             'awards' => ['Prix Mercury'],
         ]);
+        $collection = EditorialCollection::query()->where('slug', 'litterature-recits')->firstOrFail();
 
         $storeResponse = $this->actingAs($admin)->post('/admin/api/books', [
             'title' => 'Livre Admin',
             'author_id' => $author->id,
+            'editorial_collection_id' => $collection->id,
             'author_name' => $author->name,
             'price' => 5500,
             'category' => 'roman',
@@ -52,13 +55,16 @@ class AdminBookManagementTest extends TestCase
             'ebook_pdf' => UploadedFile::fake()->create('sample.pdf', 120, 'application/pdf'),
             'ebook_epub' => UploadedFile::fake()->create('sample.epub', 140, 'application/epub+zip'),
             'year' => 2026,
+            'publication_date' => '2026-05-20',
             'pages' => 260,
             'publisher' => 'Mercury Editions',
+            'editorial_director' => 'Direction Mercury',
             'language' => 'Francais',
             'isbn' => '978-2-35926-700-0',
             'tags' => ['admin', 'ebook'],
             'description' => 'Description admin pour tester les uploads.',
             'summary' => 'Resume admin pour tester le CRUD.',
+            'public_excerpt' => 'Voici un extrait public du livre admin, pensé pour présenter la voix et le ton du texte.',
             'quote' => 'Un back office robuste aide toute la plateforme.',
         ], [
             'Accept' => 'application/json',
@@ -67,7 +73,10 @@ class AdminBookManagementTest extends TestCase
         $storeResponse
             ->assertCreated()
             ->assertJsonPath('title', 'Livre Admin')
-            ->assertJsonPath('author.id', $author->id);
+            ->assertJsonPath('author.id', $author->id)
+            ->assertJsonPath('editorial_collection.id', $collection->id)
+            ->assertJsonPath('publication_date', '2026-05-20')
+            ->assertJsonPath('editorial_director', 'Direction Mercury');
 
         $bookId = (int) $storeResponse->json('id');
         $coverImage = (string) $storeResponse->json('cover_image');
@@ -85,11 +94,19 @@ class AdminBookManagementTest extends TestCase
         $this->actingAs($admin)
             ->putJson("/admin/api/books/{$bookId}", [
                 'title' => 'Livre Admin Mis a Jour',
+                'editorial_collection_id' => null,
+                'publication_date' => '2026-06-01',
+                'editorial_director' => 'Comité Mercury',
+                'public_excerpt' => 'Nouvel extrait public.',
                 'price' => 5900,
                 'pages' => 280,
             ])
             ->assertOk()
             ->assertJsonPath('title', 'Livre Admin Mis a Jour')
+            ->assertJsonPath('editorial_collection_id', null)
+            ->assertJsonPath('publication_date', '2026-06-01')
+            ->assertJsonPath('editorial_director', 'Comité Mercury')
+            ->assertJsonPath('public_excerpt', 'Nouvel extrait public.')
             ->assertJsonPath('price', 5900)
             ->assertJsonPath('pages', 280);
 

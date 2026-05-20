@@ -2,10 +2,10 @@ import { useState, useEffect, useCallback } from 'react';
 import { api } from './api';
 
 const emptyBook = {
-  title: '', author_id: '', author_name: '', price: 0, category: 'roman',
+  title: '', author_id: '', editorial_collection_id: '', author_name: '', price: 0, category: 'roman',
   rating: 4.0, local: true, color: '#1a1a2e', cover_image: '', year: 2024, pages: 200,
-  publisher: '', language: 'Francais', isbn: '', tags: '',
-  description: '', summary: '', quote: '',
+  publication_date: '', publisher: '', editorial_director: '', language: 'Francais', isbn: '', tags: '',
+  description: '', summary: '', public_excerpt: '', quote: '',
 };
 
 const categories = [
@@ -26,6 +26,7 @@ const categoryColors = {
 export default function BookManager() {
   const [books, setBooks] = useState([]);
   const [authors, setAuthors] = useState([]);
+  const [collections, setCollections] = useState([]);
   const [loading, setLoading] = useState(true);
   const [modal, setModal] = useState(false);
   const [form, setForm] = useState(emptyBook);
@@ -46,8 +47,8 @@ export default function BookManager() {
   };
 
   const load = useCallback(() => {
-    Promise.all([api.get('/admin/api/books'), api.get('/admin/api/authors')])
-      .then(([b, a]) => { setBooks(b); setAuthors(a); })
+    Promise.all([api.get('/admin/api/books'), api.get('/admin/api/authors'), api.get('/admin/api/editorial-collections')])
+      .then(([b, a, c]) => { setBooks(b); setAuthors(a); setCollections(Array.isArray(c) ? c : []); })
       .finally(() => setLoading(false));
   }, []);
 
@@ -67,6 +68,7 @@ export default function BookManager() {
     setForm({
       ...book,
       author_id: book.author_id || '',
+      editorial_collection_id: book.editorial_collection_id || '',
       tags: Array.isArray(book.tags) ? book.tags.join(', ') : book.tags || '',
     });
     setEditId(book.id);
@@ -96,9 +98,11 @@ export default function BookManager() {
       price: Number(form.price),
       rating: Number(form.rating),
       year: Number(form.year),
+      publication_date: form.publication_date || null,
       pages: Number(form.pages),
       local: Boolean(form.local),
       author_id: form.author_id ? Number(form.author_id) : null,
+      editorial_collection_id: form.editorial_collection_id ? Number(form.editorial_collection_id) : null,
       tags: typeof form.tags === 'string'
         ? form.tags.split(',').map(t => t.trim()).filter(Boolean)
         : form.tags,
@@ -203,7 +207,7 @@ export default function BookManager() {
             <thead>
               <tr>
                 <th>Livre</th><th>Auteur</th><th>Prix</th>
-                <th>Categorie</th><th>Note</th><th>Annee</th><th>Actions</th>
+                <th>Categorie</th><th>Collection</th><th>Note</th><th>Annee</th><th>Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -230,6 +234,13 @@ export default function BookManager() {
                     </span>
                   </td>
                   <td>
+                    {b.editorial_collection ? (
+                      <span className="badge" style={{ background: `${b.editorial_collection.color || '#B91C1C'}20`, color: b.editorial_collection.color || '#B91C1C' }}>
+                        {b.editorial_collection.name}
+                      </span>
+                    ) : <span className="text-muted text-sm">Non assignée</span>}
+                  </td>
+                  <td>
                     <div className="rating-display">
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="#F59E0B" stroke="#F59E0B" strokeWidth="1"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
                       <span>{b.rating}</span>
@@ -247,7 +258,7 @@ export default function BookManager() {
                 </tr>
               ))}
               {filtered.length === 0 && (
-                <tr><td colSpan={7} className="admin-empty">Aucun livre trouve.</td></tr>
+                <tr><td colSpan={8} className="admin-empty">Aucun livre trouve.</td></tr>
               )}
             </tbody>
           </table>
@@ -276,12 +287,19 @@ export default function BookManager() {
                   <p className="preview-author">par {preview.author_name}</p>
                   <div className="preview-meta">
                     <span className="badge" style={{ background: `${categoryColors[preview.category]}20`, color: categoryColors[preview.category] }}>{preview.category}</span>
+                    {preview.editorial_collection && (
+                      <span className="badge" style={{ background: `${preview.editorial_collection.color || '#B91C1C'}20`, color: preview.editorial_collection.color || '#B91C1C' }}>
+                        {preview.editorial_collection.name}
+                      </span>
+                    )}
                     <span className="preview-year">{preview.year}</span>
                     <span className="preview-pages">{preview.pages} pages</span>
                   </div>
                   <div className="preview-price">{fmt(preview.price)} FCFA</div>
                   <div className="preview-details-grid">
                     <div><span className="preview-label">Editeur</span><span>{preview.publisher}</span></div>
+                    <div><span className="preview-label">Direction éditoriale</span><span>{preview.editorial_director || 'Non renseignée'}</span></div>
+                    <div><span className="preview-label">Parution</span><span>{preview.publication_date || preview.year}</span></div>
                     <div><span className="preview-label">Langue</span><span>{preview.language}</span></div>
                     <div><span className="preview-label">ISBN</span><span>{preview.isbn}</span></div>
                     <div><span className="preview-label">Note</span><span>{preview.rating} / 5</span></div>
@@ -325,6 +343,12 @@ export default function BookManager() {
                     {authors.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
                   </select>
                 </FormField>
+                <FormField label="Collection éditoriale" error={errors.editorial_collection_id}>
+                  <select className="form-select" value={form.editorial_collection_id || ''} onChange={e => handleChange('editorial_collection_id', e.target.value)}>
+                    <option value="">-- Non assignée --</option>
+                    {collections.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                  </select>
+                </FormField>
                 <FormField label="Nom auteur" error={errors.author_name}>
                   <input className="form-input" value={form.author_name} onChange={e => handleChange('author_name', e.target.value)} />
                 </FormField>
@@ -342,11 +366,17 @@ export default function BookManager() {
                 <FormField label="Annee" error={errors.year}>
                   <input type="number" className="form-input" value={form.year} onChange={e => handleChange('year', e.target.value)} />
                 </FormField>
+                <FormField label="Date de parution" error={errors.publication_date}>
+                  <input type="date" className="form-input" value={form.publication_date || ''} onChange={e => handleChange('publication_date', e.target.value)} />
+                </FormField>
                 <FormField label="Pages" error={errors.pages}>
                   <input type="number" className="form-input" value={form.pages} onChange={e => handleChange('pages', e.target.value)} />
                 </FormField>
                 <FormField label="Editeur" error={errors.publisher}>
                   <input className="form-input" value={form.publisher} onChange={e => handleChange('publisher', e.target.value)} />
+                </FormField>
+                <FormField label="Directeur éditorial" error={errors.editorial_director}>
+                  <input className="form-input" value={form.editorial_director || ''} onChange={e => handleChange('editorial_director', e.target.value)} />
                 </FormField>
                 <FormField label="Langue" error={errors.language}>
                   <input className="form-input" value={form.language} onChange={e => handleChange('language', e.target.value)} />
@@ -381,6 +411,9 @@ export default function BookManager() {
                 </FormField>
                 <FormField label="Resume" error={errors.summary} full>
                   <textarea className="form-textarea" rows={3} value={form.summary} onChange={e => handleChange('summary', e.target.value)} />
+                </FormField>
+                <FormField label="Extrait public" error={errors.public_excerpt} full>
+                  <textarea className="form-textarea" rows={5} value={form.public_excerpt || ''} onChange={e => handleChange('public_excerpt', e.target.value)} placeholder="Extrait affiché gratuitement sur la fiche livre..." />
                 </FormField>
                 <FormField label="Citation" error={errors.quote} full>
                   <textarea className="form-textarea" rows={2} value={form.quote} onChange={e => handleChange('quote', e.target.value)} />

@@ -20,25 +20,25 @@ export default function Hero() {
       <div className="hero-geometric"></div>
       <div className="hero-content">
         <div className="hero-text">
-          <div className="hero-badge">Librairie Numérique #1 au Burkina</div>
-          <h1>Découvrez la <em>richesse</em> littéraire du Burkina Faso</h1>
-          <p className="hero-desc">La première plateforme dédiée aux auteurs burkinabè.</p>
+          <div className="hero-badge">Maison d'édition burkinabè</div>
+          <h1>Publier les voix qui <em>font lire</em> le Burkina Faso</h1>
+          <p className="hero-desc">Mercury Editions accompagne les auteurs, fabrique leurs livres et les diffuse en formats papier et numérique.</p>
           <div className="hero-actions">
             <a href="#catalogue" className="btn btn-primary" onClick={(e) => { e.preventDefault(); scrollToSection('catalogue'); }}>Explorer le catalogue <Icon name="arrowRight" size={16} /></a>
-            <a href="#auteurs" className="btn btn-outline" onClick={(e) => { e.preventDefault(); scrollToSection('auteurs'); }}>Nos auteurs</a>
+            <a href="#maison" className="btn btn-outline" onClick={(e) => { e.preventDefault(); scrollToSection('maison'); }}>Notre ligne éditoriale</a>
           </div>
           <div className="hero-stats">
             <div>
-              <div className="hero-stat-num">500+</div>
-              <div className="hero-stat-label">Livres disponibles</div>
+              <div className="hero-stat-num">3</div>
+              <div className="hero-stat-label">Collections</div>
             </div>
             <div>
-              <div className="hero-stat-num">120+</div>
-              <div className="hero-stat-label">Auteurs locaux</div>
+              <div className="hero-stat-num">2</div>
+              <div className="hero-stat-label">Formats publiés</div>
             </div>
             <div>
-              <div className="hero-stat-num">50K+</div>
-              <div className="hero-stat-label">Lecteurs actifs</div>
+              <div className="hero-stat-num">5</div>
+              <div className="hero-stat-label">Étapes éditoriales</div>
             </div>
           </div>
         </div>

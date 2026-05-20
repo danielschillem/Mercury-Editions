@@ -3,11 +3,6 @@ import { useApp } from '../context/AppContext';
 import { useAuth } from '../context/AuthContext';
 import Icon from './Icons';
 
-function buildReaderQuery(token) {
-  const value = (token || '').trim();
-  return value ? `?token=${encodeURIComponent(value)}` : '';
-}
-
 function compactToken(token) {
   if (!token) return 'LICENCE';
   const value = token.toUpperCase();
@@ -56,6 +51,8 @@ export default function Reader({ bookId, onClose, returnTo = 'library' }) {
   const lastProgressSyncAtRef = useRef(Date.now());
   const saveIntervalRef = useRef(null);
   const iframeRef = useRef(null);
+  const [blobUrls, setBlobUrls] = useState({ pdf: null, epub: null });
+  const blobUrlsRef = useRef({ pdf: null, epub: null });
 
   // ─── Text-to-Speech (Lecteur Vocal) ───
   const [ttsState, setTtsState] = useState({
@@ -254,9 +251,10 @@ export default function Reader({ bookId, onClose, returnTo = 'library' }) {
     if (!user || !book) return;
     
     try {
-      const query = buildReaderQuery(purchaseToken);
-      const response = await fetch(`/api/customer/books/${book.id}/progress${query}`, {
-        headers: { Accept: 'application/json' },
+      const progressHeaders = { Accept: 'application/json' };
+      if (purchaseToken) progressHeaders['Authorization'] = `Bearer ${purchaseToken}`;
+      const response = await fetch(`/api/customer/books/${book.id}/progress`, {
+        headers: progressHeaders,
         credentials: 'include',
       });
       
@@ -306,13 +304,11 @@ export default function Reader({ bookId, onClose, returnTo = 'library' }) {
     setIsSaving(true);
     
     try {
-      const query = buildReaderQuery(purchaseToken);
-      const response = await fetch(`/api/customer/books/${book.id}/progress${query}`, {
+      const saveHeaders = { Accept: 'application/json', 'Content-Type': 'application/json' };
+      if (purchaseToken) saveHeaders['Authorization'] = `Bearer ${purchaseToken}`;
+      const response = await fetch(`/api/customer/books/${book.id}/progress`, {
         method: 'POST',
-        headers: { 
-          Accept: 'application/json',
-          'Content-Type': 'application/json',
-        },
+        headers: saveHeaders,
         credentials: 'include',
         body: JSON.stringify({
           format: activeFormat,
@@ -354,7 +350,6 @@ export default function Reader({ bookId, onClose, returnTo = 'library' }) {
     if (!book) return;
 
     let cancelled = false;
-    const query = buildReaderQuery(purchaseToken);
 
     setReaderState({
       status: 'loading',
@@ -362,8 +357,11 @@ export default function Reader({ bookId, onClose, returnTo = 'library' }) {
       error: '',
     });
 
-    fetch(`/api/books/${book.id}/reader${query}`, {
-      headers: { Accept: 'application/json' },
+    const metaHeaders = { Accept: 'application/json' };
+    if (purchaseToken) metaHeaders['Authorization'] = `Bearer ${purchaseToken}`;
+
+    fetch(`/api/books/${book.id}/reader`, {
+      headers: metaHeaders,
       credentials: 'include',
     })
       .then(async (response) => {
@@ -401,6 +399,43 @@ export default function Reader({ bookId, onClose, returnTo = 'library' }) {
       cancelled = true;
     };
   }, [book?.id, purchaseToken, user?.id, loadProgress]);
+
+  // Libérer les blob URLs à la fermeture du reader
+  useEffect(() => {
+    return () => {
+      Object.values(blobUrlsRef.current).forEach((url) => {
+        if (url) URL.revokeObjectURL(url);
+      });
+    };
+  }, []);
+
+  // Charger le fichier ebook en blob pour ne pas exposer le token dans l'URL iframe
+  useEffect(() => {
+    if (readerState.status !== 'ready' || !book) return;
+
+    const payload = readerState.payload;
+    const token = payload?.purchase?.access_token || purchaseToken || '';
+    const formats = payload?.reader?.available_formats || {};
+
+    ['pdf', 'epub'].forEach((fmt) => {
+      if (!formats[fmt] || blobUrlsRef.current[fmt]) return;
+
+      const headers = { Accept: '*/*' };
+      if (token) headers['Authorization'] = `Bearer ${token}`;
+
+      fetch(`/api/books/${book.id}/reader/${fmt}`, { headers, credentials: 'include' })
+        .then((res) => {
+          if (!res.ok) throw new Error(`Fichier ${fmt.toUpperCase()} indisponible`);
+          return res.blob();
+        })
+        .then((blob) => {
+          const url = URL.createObjectURL(blob);
+          blobUrlsRef.current[fmt] = url;
+          setBlobUrls((prev) => ({ ...prev, [fmt]: url }));
+        })
+        .catch(() => {});
+    });
+  }, [readerState.status, readerState.payload, book?.id, purchaseToken]);
 
   // Bloquer raccourcis
   useEffect(() => {
@@ -571,9 +606,8 @@ export default function Reader({ bookId, onClose, returnTo = 'library' }) {
     ? activeFormat
     : (availableFormats.pdf ? 'pdf' : (availableFormats.epub ? 'epub' : null));
   const accessToken = readerState.payload.purchase?.access_token || purchaseToken || '';
-  const fileQuery = buildReaderQuery(accessToken);
-  const pdfUrl = availableFormats.pdf ? `/api/books/${book.id}/reader/pdf${fileQuery}` : '';
-  const epubUrl = availableFormats.epub ? `/api/books/${book.id}/reader/epub${fileQuery}` : '';
+  const pdfUrl = blobUrls.pdf || '';
+  const epubUrl = blobUrls.epub || '';
   const buyerPhone = readerState.payload.purchase?.buyer_phone || purchase?.buyerPhone || user?.phone || '-';
   const transactionId = readerState.payload.purchase?.transaction_id || purchase?.txnId || '-';
   const hasRealFile = availableFormats.pdf || availableFormats.epub;
@@ -648,25 +682,19 @@ export default function Reader({ bookId, onClose, returnTo = 'library' }) {
 
   const renderPdfReader = () => (
     <div className="reader-surface">
-      <iframe
-        ref={iframeRef}
-        key={pdfUrl}
-        src={`${pdfUrl}#page=${currentPage}`}
-        title={`Lecture PDF - ${book.title}`}
-        className="reader-document-frame"
-        onLoad={(e) => {
-          // Tenter de détecter le nombre de pages
-          try {
-            // Note: Accès limité cross-origin, fonctionne avec même origine
-            const iframe = e.target;
-            if (iframe.contentWindow?.document) {
-              // Pour PDF.js ou lecteur natif - peut nécessiter ajustement
-            }
-          } catch (err) {
-            // Accès cross-origin bloqué
-          }
-        }}
-      />
+      {!pdfUrl ? (
+        <div className="reader-document-frame" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div className="spinner" />
+        </div>
+      ) : (
+        <iframe
+          ref={iframeRef}
+          key={pdfUrl}
+          src={`${pdfUrl}#page=${currentPage}`}
+          title={`Lecture PDF - ${book.title}`}
+          className="reader-document-frame"
+        />
+      )}
       
       {/* Contrôles de navigation */}
       <div className="reader-controls">
@@ -754,12 +782,18 @@ export default function Reader({ bookId, onClose, returnTo = 'library' }) {
           <p>Le fichier EPUB original est disponible. Le rendu dépend du navigateur utilisé, donc une ouverture dans un onglet dédié reste proposée.</p>
         </div>
         <div className="reader-epub-preview">
-          <iframe
-            key={epubUrl}
-            src={epubUrl}
-            title={`Lecture EPUB - ${book.title}`}
-            className="reader-document-frame reader-document-frame-epub"
-          />
+          {!epubUrl ? (
+            <div className="reader-document-frame reader-document-frame-epub" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <div className="spinner" />
+            </div>
+          ) : (
+            <iframe
+              key={epubUrl}
+              src={epubUrl}
+              title={`Lecture EPUB - ${book.title}`}
+              className="reader-document-frame reader-document-frame-epub"
+            />
+          )}
         </div>
         <div className="reader-file-actions">
           <button className="reader-link-btn" onClick={openCurrentFormat}>

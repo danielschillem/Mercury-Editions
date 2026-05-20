@@ -6,7 +6,6 @@ use App\Models\Book;
 use App\Observers\BookObserver;
 use App\Services\BookCacheService;
 use Illuminate\Support\ServiceProvider;
-use Illuminate\Support\Facades\Vite;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -26,10 +25,6 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        if ($this->app->environment('local')) {
-            Vite::useHotFile(storage_path('framework/vite.hot.disabled'));
-        }
-
         // Observer pour invalider le cache quand les livres sont modifiés
         Book::observe(BookObserver::class);
     }

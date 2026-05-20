@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Tests\Feature;
 
 use App\Models\ContactMessage;
+use App\Models\EditorialCollection;
+use App\Models\ManuscriptSubmission;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -40,10 +42,14 @@ class AdminApiTest extends TestCase
                     'completed_orders',
                     'pending_orders',
                     'total_revenue',
+                    'total_manuscripts',
+                    'new_manuscripts',
+                    'active_manuscripts',
                 ],
                 'dailyRevenue',
                 'topBooks',
                 'recentOrders',
+                'recentManuscripts',
             ]);
     }
 
@@ -109,6 +115,127 @@ class AdminApiTest extends TestCase
             ->assertJsonPath('data.0.email', 'awa@example.test');
     }
 
+    public function test_admin_can_review_manuscript_submissions(): void
+    {
+        $admin = User::factory()->create([
+            'phone' => '70123456',
+            'is_admin' => true,
+        ]);
+
+        $submission = ManuscriptSubmission::create([
+            'author_name' => 'Awa Sawadogo',
+            'email' => 'awa.manuscrit@example.test',
+            'title' => 'Les saisons du retour',
+            'collection' => 'litterature-recits',
+            'genre' => 'Roman',
+            'page_count' => 184,
+            'synopsis' => 'Une jeune femme revient au village pour interroger la memoire familiale et les chemins possibles de la jeunesse.',
+            'status' => 'received',
+        ]);
+
+        $this->actingAs($admin)
+            ->getJson('/admin/api/manuscripts?search=retour')
+            ->assertOk()
+            ->assertJsonPath('total', 1)
+            ->assertJsonPath('data.0.email', 'awa.manuscrit@example.test');
+
+        $this->actingAs($admin)
+            ->patchJson("/admin/api/manuscripts/{$submission->id}", [
+                'status' => 'reading',
+                'admin_notes' => 'À faire lire au comité éditorial.',
+            ])
+            ->assertOk()
+            ->assertJsonPath('status', 'reading')
+            ->assertJsonPath('admin_notes', 'À faire lire au comité éditorial.');
+
+        $this->assertDatabaseHas('manuscript_submissions', [
+            'id' => $submission->id,
+            'status' => 'reading',
+        ]);
+    }
+
+    public function test_dashboard_exposes_editorial_manuscript_metrics(): void
+    {
+        $admin = User::factory()->create([
+            'phone' => '70123456',
+            'is_admin' => true,
+        ]);
+
+        ManuscriptSubmission::create([
+            'author_name' => 'Awa Sawadogo',
+            'email' => 'awa.manuscrit@example.test',
+            'title' => 'Les saisons du retour',
+            'collection' => 'litterature-recits',
+            'synopsis' => 'Une jeune femme revient au village pour interroger la memoire familiale et les chemins possibles de la jeunesse.',
+            'status' => 'received',
+        ]);
+
+        ManuscriptSubmission::create([
+            'author_name' => 'Moussa Ouedraogo',
+            'email' => 'moussa.manuscrit@example.test',
+            'title' => 'Notes sur la ville',
+            'collection' => 'savoirs-societe',
+            'synopsis' => 'Un essai sur les transformations urbaines, les mobilites quotidiennes et les nouvelles formes de citoyennete.',
+            'status' => 'reading',
+        ]);
+
+        $this->actingAs($admin)
+            ->getJson('/admin/api/dashboard')
+            ->assertOk()
+            ->assertJsonPath('stats.total_manuscripts', 2)
+            ->assertJsonPath('stats.new_manuscripts', 1)
+            ->assertJsonPath('stats.active_manuscripts', 2)
+            ->assertJsonCount(2, 'recentManuscripts');
+    }
+
+    public function test_admin_can_manage_editorial_collections(): void
+    {
+        $admin = User::factory()->create([
+            'phone' => '70123456',
+            'is_admin' => true,
+        ]);
+
+        $response = $this->actingAs($admin)
+            ->postJson('/admin/api/editorial-collections', [
+                'name' => 'Poésie vive',
+                'slug' => 'poesie-vive',
+                'description' => 'Collection dédiée aux voix poétiques contemporaines.',
+                'icon' => 'pen',
+                'color' => '#7C3AED',
+                'sort_order' => 40,
+                'is_active' => true,
+            ])
+            ->assertCreated()
+            ->assertJsonPath('slug', 'poesie-vive');
+
+        $collectionId = $response->json('id');
+
+        $this->actingAs($admin)
+            ->putJson("/admin/api/editorial-collections/{$collectionId}", [
+                'name' => 'Poésie vive',
+                'slug' => 'poesie-vive',
+                'description' => 'Collection dédiée aux voix poétiques contemporaines et aux formes brèves.',
+                'icon' => 'pen',
+                'color' => '#7C3AED',
+                'sort_order' => 45,
+                'is_active' => false,
+            ])
+            ->assertOk()
+            ->assertJsonPath('is_active', false)
+            ->assertJsonPath('sort_order', 45);
+
+        $this->assertDatabaseHas('editorial_collections', [
+            'id' => $collectionId,
+            'slug' => 'poesie-vive',
+            'is_active' => false,
+        ]);
+
+        $this->actingAs($admin)
+            ->getJson('/admin/api/editorial-collections')
+            ->assertOk()
+            ->assertJsonFragment(['slug' => 'poesie-vive']);
+    }
+
     public function test_admin_login_is_rate_limited_after_too_many_attempts(): void
     {
         $admin = User::factory()->create([
@@ -122,7 +249,7 @@ class AdminApiTest extends TestCase
             $this->postJson('/admin/login', [
                 'email' => $admin->email,
                 'password' => 'wrong-password',
-            ])->assertStatus(422);
+            ])->assertStatus(401);
         }
 
         $this->postJson('/admin/login', [

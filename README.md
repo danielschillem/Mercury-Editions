@@ -2,7 +2,7 @@
 
 # 📚 Mercury Editions
 
-**Librairie Numérique du Burkina Faso**
+**Maison d'édition numérique du Burkina Faso**
 
 [![Version](https://img.shields.io/badge/version-1.2.0--dev-blue.svg)](CHANGELOG.md)
 [![Laravel](https://img.shields.io/badge/Laravel-13.x-FF2D20.svg)](https://laravel.com)
@@ -10,7 +10,7 @@
 [![PHP](https://img.shields.io/badge/PHP-≥8.4-777BB4.svg)](https://php.net)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
-*La première plateforme dédiée à la promotion et la vente d'œuvres littéraires d'auteurs burkinabè.*
+*Publier, accompagner et diffuser les voix littéraires du Burkina Faso.*
 
 </div>
 
@@ -37,7 +37,7 @@
 
 ## 🎯 Présentation
 
-**Mercury Editions** est une application web SPA (Single Page Application) de librairie numérique spécialisée dans la littérature burkinabè. Elle permet de découvrir, acheter et lire des œuvres d'auteurs du Burkina Faso via un paiement mobile Orange Money.
+**Mercury Editions** est une application web SPA (Single Page Application) pour une maison d'édition numérique spécialisée dans la littérature burkinabè. Elle permet de publier, découvrir, acheter et lire des œuvres d'auteurs du Burkina Faso via un paiement mobile Orange Money.
 
 Le projet valorise le patrimoine littéraire local en proposant un catalogue de **12 œuvres** de **6 auteurs** emblématiques couvrant les genres : roman, poésie, essai, conte et littérature jeunesse.
 
@@ -62,8 +62,8 @@ Le MVP livre les fonctionnalités essentielles pour une mise en ligne fonctionne
 
 | # | Fonctionnalité | Statut |
 |---|----------------|--------|
-| 1 | Catalogue de 12 livres avec recherche et filtrage par catégorie | ✅ Livré |
-| 2 | Fiches auteurs détaillées (bio, chronologie, distinctions) | ✅ Livré |
+| 1 | Catalogue de 11 livres avec recherche et filtrage par catégorie | ✅ Livré |
+| 2 | Fiches 10 auteurs détaillées (bio, chronologie, distinctions) | ✅ Livré |
 | 3 | Fiche livre complète (description, résumé, citation, specs) | ✅ Livré |
 | 4 | Panier d'achat persistant (localStorage) | ✅ Livré |
 | 5 | Paiement Orange Money avec OTP (mode simulation + production) | ✅ Livré |
@@ -103,7 +103,7 @@ Le MVP livre les fonctionnalités essentielles pour une mise en ligne fonctionne
 - **Dashboard admin** — Statistiques temps réel, gestion CRUD
 - **Newsletter** — Inscription avec token de désinscription
 - **Contact** — Messagerie avec suivi admin
-- **Tests feature** — 20 tests couvrant tous les flux critiques
+- **Tests feature** — 31 tests couvrant tous les flux critiques
 
 ---
 
@@ -174,8 +174,11 @@ composer setup
 composer install
 cp .env.example .env
 php artisan key:generate
-php artisan migrate
-npm install
+touch database/database.sqlite
+php artisan migrate --force
+php artisan db:seed --force
+php artisan storage:link
+npm ci
 npm run build
 ```
 
@@ -194,7 +197,7 @@ APP_URL=http://localhost:8000
 DB_CONNECTION=sqlite
 
 # Orange Money — Paiement
-ORANGE_OM_SIMULATE=false         # false recommandé (production)
+ORANGE_OM_SIMULATE=true          # true en local/sandbox, false en production
 ORANGE_OM_ENV=test               # test | prod
 ORANGE_COUNTRY_CODE=226          # Burkina Faso
 ORANGE_OM_URL_PROD=https://apiom.orange.bf/
@@ -208,7 +211,7 @@ ORANGE_OM_PAYID=12
 ORANGE_OM_PAYID2=12
 ```
 
-> **Note :** Activez `ORANGE_OM_SIMULATE=true` uniquement en local/sandbox. En production, gardez `ORANGE_OM_SIMULATE=false`.
+> **Note :** `ORANGE_OM_SIMULATE=true` permet de tester le checkout en local sans appeler Orange Money. En production, définissez `ORANGE_OM_SIMULATE=false`.
 
 Checklist de déploiement recommandée : `docs/PRODUCTION_CHECKLIST.md`.
 
@@ -230,6 +233,9 @@ php artisan serve
 ```
 
 L'application est accessible à : **http://localhost:8000**
+
+En développement, Vite (port **5173** fixe, `strictPort: true`) écrit son hot-file dans `public/hot`.
+Si Vite est arrêté brutalement et que ce fichier reste, Laravel chargera les assets depuis un serveur mort — supprimez-le manuellement : `rm public/hot`.
 
 ---
 
@@ -299,7 +305,7 @@ mercury/
 │   ├── api.php                          # Routes API (65+ endpoints)
 │   └── web.php                          # Routes web + admin
 ├── tests/
-│   └── Feature/                         # 20 tests feature
+│   └── Feature/                         # 31 tests feature
 ├── composer.json
 ├── package.json
 ├── vite.config.js
@@ -366,9 +372,20 @@ Accept: application/json
 
 ## 🗺 Roadmap
 
-### v1.0.0 — MVP ✅ (Mars 2026)
-- [x] Catalogue de 12 livres avec filtrage par catégorie
-- [x] 6 profils auteurs détaillés
+La roadmap produit ci-dessous couvre l'application. La transformation éditoriale complète est détaillée dans [`docs/EDITORIAL_ROADMAP.md`](docs/EDITORIAL_ROADMAP.md).
+
+### Transformation maison d'édition — 2026
+- [x] Repositionnement public: hero, section maison d'édition, footer édition
+- [ ] Page ou module "Soumettre un manuscrit"
+- [ ] Collections administrables depuis l'admin
+- [ ] Pipeline manuscrit: reçu, en lecture, accepté, en production, publié
+- [ ] Fiches livres enrichies: collection, ISBN, extrait, date de parution
+- [ ] Calendrier éditorial et lancements de nouveautés
+- [ ] Reporting auteur, droits et diffusion partenaires
+
+### v1.0.0 — MVP ✅ (18 mars 2026)
+- [x] Catalogue de 11 livres avec recherche full-text et filtrage par catégorie
+- [x] 10 profils auteurs détaillés (bio, chronologie, distinctions)
 - [x] Panier d'achat (localStorage + sync serveur)
 - [x] Paiement Orange Money (simulation + production)
 - [x] Système d'authentification utilisateur (inscription/connexion)
@@ -384,22 +401,29 @@ Accept: application/json
 - [x] Newsletter avec inscription/désinscription
 - [x] SPA React responsive (mobile, tablette, desktop)
 - [x] Design premium avec animations et gradients
-- [x] 20 tests feature couvrant tous les flux critiques
+- [x] 31 tests feature couvrant tous les flux critiques
 - [x] Déploiement Hostinger-ready
 
-### v1.1.0 — Améliorations UX (Q2 2026) ✅
-- [x] Recherche full-text dans le catalogue
-- [x] Mode sombre / clair
-- [x] Notifications push (nouvelles sorties)
-- [x] PWA (Progressive Web App) — usage hors-ligne
+### v1.1.0 — Qualité & UX ✅ (Avril 2026)
+- [x] Mode sombre / clair (ThemeContext)
+- [x] PWA (Progressive Web App) — Service Worker + manifest
+- [x] Export des achats en PDF (jsPDF dans l'espace client)
+- [ ] Notifications push réelles — UI présente, backend push à connecter
 
-### v1.2.0 — Enrichissement catalogue (Q3 2026) 🚧
+### v1.2.0 — Enrichissement catalogue 🚧 (Q3 2026)
+- [ ] Catégories dynamiques depuis la base de données (actuellement hardcodées côté frontend)
+- [ ] Ajout de nouveaux ouvrages au catalogue (objectif : 20+ titres)
 - [ ] Recommandations personnalisées (basées sur les achats)
-- [ ] Catégories dynamiques depuis la base de données
 - [ ] Support multi-langue (Français, Mooré, Dioula)
-- [ ] Export des achats en PDF
 
-### v2.0.0 — Plateforme sociale (Q4 2026)
+### v1.3.0 — Fiabilité & performance (Q4 2026)
+- [ ] Notifications push complètes (souscription + envoi backend)
+- [ ] Lazy loading des couvertures de livres
+- [ ] Cache API côté serveur (Redis ou Octane)
+- [ ] Tests end-to-end (Playwright ou Cypress)
+- [ ] 2FA pour le compte admin
+
+### v2.0.0 — Plateforme sociale (2027)
 - [ ] Profils lecteurs publics
 - [ ] Clubs de lecture en ligne
 - [ ] Système d'abonnement mensuel
@@ -407,7 +431,7 @@ Accept: application/json
 - [ ] API publique pour les partenaires
 - [ ] Application mobile (React Native)
 
-### v3.0.0 — Expansion régionale (2027)
+### v3.0.0 — Expansion régionale (2027–2028)
 - [ ] Extension aux auteurs d'Afrique de l'Ouest (Mali, Niger, Côte d'Ivoire, Sénégal)
 - [ ] Partenariats éditeurs
 - [ ] Programme d'auto-publication pour auteurs indépendants
@@ -452,6 +476,8 @@ Ce projet est distribué sous licence **MIT**. Voir le fichier [LICENSE](LICENSE
 | Version | Date | Description |
 |---------|------|-------------|
 | **1.0.0** | 18 mars 2026 | MVP — Lancement initial |
+| **1.1.0** | Avril 2026 | Mode sombre, PWA, export PDF |
+| **1.2.0-dev** | En cours | Enrichissement catalogue, catégories dynamiques |
 
 ---
 

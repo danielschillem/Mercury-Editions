@@ -82,6 +82,7 @@ class BookReaderController extends Controller
                 'Cache-Control' => 'private, max-age=0, must-revalidate',
                 'Pragma' => 'no-cache',
                 'X-Robots-Tag' => 'noindex, nofollow',
+                'Referrer-Policy' => 'no-referrer',
             ],
             'inline',
         );

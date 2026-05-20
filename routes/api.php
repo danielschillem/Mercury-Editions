@@ -7,6 +7,8 @@ use App\Http\Controllers\BookReviewController;
 use App\Http\Controllers\ContactController;
 use App\Http\Controllers\ReadingProgressController;
 use App\Http\Controllers\CustomerAuthController;
+use App\Http\Controllers\EditorialCollectionController;
+use App\Http\Controllers\ManuscriptSubmissionController;
 use App\Http\Controllers\NewsletterController;
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\PaymentController;
@@ -24,8 +26,11 @@ Route::get('/books/{book}/reader/{format}', [BookReaderController::class, 'file'
 Route::get('/authors', [AuthorController::class, 'index']);
 Route::get('/authors/{author:slug}', [AuthorController::class, 'show']);
 
+// Collections éditoriales
+Route::get('/editorial-collections', [EditorialCollectionController::class, 'index']);
+
 // Commandes
-Route::post('/orders', [OrderController::class, 'store']);
+Route::post('/orders', [OrderController::class, 'store'])->middleware('throttle:10,1');
 Route::middleware('auth')->group(function () {
     Route::get('/orders/{order}', [OrderController::class, 'show']);
     Route::patch('/orders/{order}/complete', [OrderController::class, 'complete']);
@@ -33,14 +38,17 @@ Route::middleware('auth')->group(function () {
 });
 
 // Paiement Orange Money
-Route::post('/payments/orange', [PaymentController::class, 'processOrangeMoney']);
+Route::post('/payments/orange', [PaymentController::class, 'processOrangeMoney'])->middleware('throttle:10,1');
 
 // Newsletter
 Route::post('/newsletter/subscribe', [NewsletterController::class, 'subscribe'])->middleware('throttle:5,1');
-Route::get('/newsletter/unsubscribe/{token}', [NewsletterController::class, 'unsubscribe']);
+Route::post('/newsletter/unsubscribe/{token}', [NewsletterController::class, 'unsubscribe'])->middleware('throttle:10,1');
 
 // Contact
 Route::post('/contact', [ContactController::class, 'send'])->middleware('throttle:3,1');
+
+// Soumissions de manuscrits
+Route::post('/manuscripts', [ManuscriptSubmissionController::class, 'store'])->middleware('throttle:3,1');
 
 // ── Compte client ──
 Route::middleware('throttle:5,1')->group(function () {
@@ -59,7 +67,7 @@ Route::middleware('auth')->prefix('customer')->group(function () {
     Route::get('/books/{book}/verify-access', [CustomerAuthController::class, 'verifyBookAccess']);
     Route::get('/cart', [CustomerAuthController::class, 'getCart']);
     Route::put('/cart', [CustomerAuthController::class, 'saveCart']);
-    Route::post('/resend-verification', [CustomerAuthController::class, 'resendVerification']);
+    Route::post('/resend-verification', [CustomerAuthController::class, 'resendVerification'])->middleware('throttle:3,60');
     Route::post('/books/{book}/reviews', [BookReviewController::class, 'store']);
     Route::get('/wishlist', [CustomerAuthController::class, 'getWishlist']);
     Route::post('/wishlist/{book}', [CustomerAuthController::class, 'addToWishlist']);

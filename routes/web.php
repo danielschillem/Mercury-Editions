@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Admin;
+use App\Http\Controllers\NewsletterController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Foundation\Auth\EmailVerificationRequest;
 
@@ -14,6 +15,7 @@ Route::middleware(['auth', 'admin'])->prefix('admin/api')->group(function () {
     Route::get('/dashboard', [Admin\DashboardController::class, 'index']);
     Route::apiResource('/books', Admin\BookController::class);
     Route::apiResource('/authors', Admin\AuthorController::class);
+    Route::apiResource('/editorial-collections', Admin\EditorialCollectionController::class)->except(['show']);
     Route::get('/orders', [Admin\OrderController::class, 'index']);
     Route::get('/orders/{order}', [Admin\OrderController::class, 'show']);
     Route::patch('/orders/{order}/status', [Admin\OrderController::class, 'updateStatus']);
@@ -23,6 +25,9 @@ Route::middleware(['auth', 'admin'])->prefix('admin/api')->group(function () {
     Route::delete('/users/{user}', [Admin\UserController::class, 'destroy']);
     Route::get('/contact-messages', [Admin\ContactMessageController::class, 'index']);
     Route::patch('/contact-messages/{contactMessage}/status', [Admin\ContactMessageController::class, 'updateStatus']);
+    Route::get('/manuscripts', [Admin\ManuscriptSubmissionController::class, 'index']);
+    Route::get('/manuscripts/{manuscriptSubmission}', [Admin\ManuscriptSubmissionController::class, 'show']);
+    Route::patch('/manuscripts/{manuscriptSubmission}', [Admin\ManuscriptSubmissionController::class, 'update']);
 });
 
 // ── Email Verification ──
@@ -30,6 +35,9 @@ Route::get('/email/verify/{id}/{hash}', function (EmailVerificationRequest $requ
     $request->fulfill();
     return redirect('/?verified=1');
 })->middleware(['auth', 'signed'])->name('verification.verify');
+
+// ── Newsletter unsubscribe (page de confirmation — avant le catch-all SPA) ──
+Route::get('/newsletter/unsubscribe/{token}', [NewsletterController::class, 'confirmPage']);
 
 // ── Admin SPA ──
 Route::get('/admin/{any?}', fn () => view('admin'))->where('any', '.*');

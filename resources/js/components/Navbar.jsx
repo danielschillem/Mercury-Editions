@@ -74,6 +74,7 @@ export default function Navbar() {
         </a>
         <ul className={`nav-links${mobileOpen ? ' mobile-open' : ''}`} onClick={() => setMobileOpen(false)}>
           <li><a href="#accueil" onClick={(e) => { e.preventDefault(); scrollToSection('accueil'); }}>Accueil</a></li>
+          <li><a href="#maison" onClick={(e) => { e.preventDefault(); scrollToSection('maison'); }}>Maison</a></li>
           <li><a href="#vedette" onClick={(e) => { e.preventDefault(); scrollToSection('vedette'); }}>En vedette</a></li>
           <li><a href="#parutions" onClick={(e) => { e.preventDefault(); scrollToSection('parutions'); }}>Parutions</a></li>
           <li><a href="#auteurs" onClick={(e) => { e.preventDefault(); scrollToSection('auteurs'); }}>Auteurs</a></li>

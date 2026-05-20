@@ -17,6 +17,7 @@ class BookController extends Controller
     public function index(Request $request): JsonResponse
     {
         $query = Book::query()
+            ->with('editorialCollection:id,name,slug,color')
             ->where('publisher', self::PUBLIC_PUBLISHER)
             ->orderByDesc('year')
             ->orderByDesc('id');
@@ -73,7 +74,7 @@ class BookController extends Controller
             abort(404);
         }
 
-        $book->load('author');
+        $book->load(['author', 'editorialCollection:id,name,slug,color']);
         $book->makeHidden(['ebook_pdf_path', 'ebook_epub_path']);
 
         if (Schema::hasTable('book_reviews')) {
