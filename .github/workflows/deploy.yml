@@ -91,8 +91,16 @@ jobs:
           test -n "$SSH_PRIVATE_KEY$SSH_PRIVATE_KEY_B64"
           mkdir -p ~/.ssh
           if [ -n "$SSH_PRIVATE_KEY_B64" ]; then
-            printf '%s' "$SSH_PRIVATE_KEY_B64" | base64 -d > ~/.ssh/id_ed25519
-          else
+            if printf '%s' "$SSH_PRIVATE_KEY_B64" | tr -d '[:space:]' | base64 -d > ~/.ssh/id_ed25519.tmp 2>/dev/null && ssh-keygen -y -f ~/.ssh/id_ed25519.tmp >/dev/null 2>&1; then
+              mv ~/.ssh/id_ed25519.tmp ~/.ssh/id_ed25519
+            elif [ -n "$SSH_PRIVATE_KEY" ]; then
+              rm -f ~/.ssh/id_ed25519.tmp
+              printf '%s\n' "$SSH_PRIVATE_KEY" | tr -d '\r' > ~/.ssh/id_ed25519
+            else
+              echo "SSH_PRIVATE_KEY_B64 is not valid base64 OpenSSH key data." >&2
+              exit 1
+            fi
+          elif [ -n "$SSH_PRIVATE_KEY" ]; then
             printf '%s\n' "$SSH_PRIVATE_KEY" | tr -d '\r' > ~/.ssh/id_ed25519
           fi
           chmod 600 ~/.ssh/id_ed25519
