@@ -1,0 +1,14 @@
+[Unit]
+Description=Mercury Editions Laravel Queue Worker
+After=network.target
+
+[Service]
+User=www-data
+Group=www-data
+Restart=always
+RestartSec=5
+WorkingDirectory=__APP_DIR__
+ExecStart=/usr/bin/php artisan queue:work --sleep=3 --tries=3 --timeout=90
+
+[Install]
+WantedBy=multi-user.target

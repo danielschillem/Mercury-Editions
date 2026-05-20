@@ -1,0 +1,134 @@
+name: Deploy
+
+on:
+  push:
+    branches:
+      - main
+      - master
+  workflow_dispatch:
+
+concurrency:
+  group: production-deploy
+  cancel-in-progress: false
+
+env:
+  DROPLET_IP: ${{ vars.DROPLET_IP || '64.226.123.122' }}
+  DOMAIN_NAME: ${{ vars.DOMAIN_NAME || 'editionsmercury.com' }}
+  DEPLOY_USER: ${{ vars.DEPLOY_USER || 'root' }}
+  DEPLOY_PATH: ${{ vars.DEPLOY_PATH || '/var/www/mercury-editions' }}
+  NODE_VERSION: '22'
+  APP_TIMEZONE: ${{ vars.APP_TIMEZONE || 'UTC' }}
+  APP_LOCALE: ${{ vars.APP_LOCALE || 'fr' }}
+  APP_FALLBACK_LOCALE: ${{ vars.APP_FALLBACK_LOCALE || 'fr' }}
+  APP_FAKER_LOCALE: ${{ vars.APP_FAKER_LOCALE || 'fr_FR' }}
+  LOG_CHANNEL: ${{ vars.LOG_CHANNEL || 'daily' }}
+  LOG_LEVEL: ${{ vars.LOG_LEVEL || 'warning' }}
+  DB_CONNECTION: ${{ vars.DB_CONNECTION || 'sqlite' }}
+  SESSION_DRIVER: ${{ vars.SESSION_DRIVER || 'database' }}
+  QUEUE_CONNECTION: ${{ vars.QUEUE_CONNECTION || 'database' }}
+  CACHE_STORE: ${{ vars.CACHE_STORE || 'database' }}
+  MAIL_MAILER: ${{ vars.MAIL_MAILER || 'smtp' }}
+  MAIL_PORT: ${{ vars.MAIL_PORT || '587' }}
+  ORANGE_OM_SIMULATE: ${{ vars.ORANGE_OM_SIMULATE || 'false' }}
+  ORANGE_OM_ENV: ${{ vars.ORANGE_OM_ENV || 'prod' }}
+
+jobs:
+  backend:
+    name: Backend sanity
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: bcmath, curl, intl, mbstring, sqlite3, xml, zip
+          coverage: none
+
+      - name: Validate Composer metadata
+        run: composer validate --no-check-publish
+
+      - name: PHP syntax check
+        run: |
+          php -l app/Http/Controllers/CustomerAuthController.php
+          php -l app/Http/Controllers/OrderController.php
+          php -l app/Http/Controllers/PaymentController.php
+
+  frontend:
+    name: Frontend build
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - run: npm ci
+      - run: npm run build
+
+  deploy:
+    name: Deploy production
+    runs-on: ubuntu-24.04
+    needs:
+      - backend
+      - frontend
+    environment:
+      name: production
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install deploy tools
+        run: sudo apt-get update && sudo apt-get install -y jq rsync openssh-client
+
+      - name: Configure SSH
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+        run: |
+          test -n "$DROPLET_IP"
+          test -n "$SSH_PRIVATE_KEY"
+          mkdir -p ~/.ssh
+          printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          ssh-keyscan -H "$DROPLET_IP" >> ~/.ssh/known_hosts
+
+      - name: Verify DigitalOcean droplet
+        env:
+          DIGITALOCEAN_TOKEN: ${{ secrets.DIGITALOCEAN_TOKEN }}
+        run: bash deploy/digitalocean-check.sh
+
+      - name: Update Hostinger DNS
+        env:
+          HOSTINGER_TOKEN: ${{ secrets.HOSTINGER_TOKEN }}
+        run: bash deploy/hostinger-dns.sh
+
+      - name: Provision droplet
+        run: |
+          ssh "$DEPLOY_USER@$DROPLET_IP" "DEPLOY_PATH='$DEPLOY_PATH' NODE_VERSION='$NODE_VERSION' bash -s" < deploy/provision-droplet.sh
+
+      - name: Sync application
+        run: |
+          rsync -az --delete --exclude-from=deploy/rsync-exclude.txt ./ "$DEPLOY_USER@$DROPLET_IP:$DEPLOY_PATH/current/"
+
+      - name: Write production environment
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+          APP_KEY: ${{ secrets.APP_KEY }}
+          DB_HOST: ${{ secrets.DB_HOST }}
+          DB_PORT: ${{ secrets.DB_PORT }}
+          DB_USERNAME: ${{ secrets.DB_USERNAME }}
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+          MAIL_HOST: ${{ secrets.MAIL_HOST }}
+          MAIL_USERNAME: ${{ secrets.MAIL_USERNAME }}
+          MAIL_PASSWORD: ${{ secrets.MAIL_PASSWORD }}
+          MAIL_FROM_ADDRESS: ${{ secrets.MAIL_FROM_ADDRESS }}
+          MERCURY_EDITORIAL_EMAIL: ${{ secrets.MERCURY_EDITORIAL_EMAIL }}
+          ORANGE_OM_MERCHANT_MSISDN: ${{ secrets.ORANGE_OM_MERCHANT_MSISDN }}
+          ORANGE_OM_API_USERNAME: ${{ secrets.ORANGE_OM_API_USERNAME }}
+          ORANGE_OM_API_PASSWORD: ${{ secrets.ORANGE_OM_API_PASSWORD }}
+        run: bash deploy/write-remote-env.sh
+
+      - name: Run remote deployment
+        run: |
+          ssh "$DEPLOY_USER@$DROPLET_IP" "cd '$DEPLOY_PATH/current' && DEPLOY_PATH='$DEPLOY_PATH' DOMAIN_NAME='$DOMAIN_NAME' bash deploy/remote-deploy.sh"
