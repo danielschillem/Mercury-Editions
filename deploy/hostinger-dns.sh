@@ -13,7 +13,7 @@ payload="$(jq -n \
   --arg ip "$DROPLET_IP" \
   --argjson ttl "$DNS_TTL" \
   '{
-    overwrite: false,
+    overwrite: true,
     zone: [
       {name: "@", type: "A", ttl: $ttl, records: [{content: $ip}]},
       {name: "www", type: "A", ttl: $ttl, records: [{content: $ip}]}
