@@ -6,12 +6,10 @@ This project deploys from GitHub Actions to a DigitalOcean droplet through SSH. 
 
 Set these in GitHub: `Settings` -> `Secrets and variables` -> `Actions` -> `Secrets`.
 
-- `DROPLET_IP`: public IP of the DigitalOcean droplet
 - `SSH_PRIVATE_KEY`: private key allowed to SSH into the droplet
 - `APP_KEY`: Laravel app key for production
-- `DOMAIN_NAME`: production domain, without `https://`
 
-Current defaults in the workflow:
+## Built-in Defaults
 
 - `DROPLET_IP`: `64.226.123.122`
 - `DOMAIN_NAME`: `editionsmercury.com`
