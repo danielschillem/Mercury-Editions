@@ -88,8 +88,20 @@ sed \
 
 $SUDO ln -sfn /etc/nginx/sites-available/mercury-editions /etc/nginx/sites-enabled/mercury-editions
 $SUDO rm -f /etc/nginx/sites-enabled/default
+$SUDO rm -f /etc/nginx/sites-enabled/mercury
 $SUDO nginx -t
 $SUDO systemctl reload nginx
+
+if command -v certbot >/dev/null 2>&1 && [[ "$DOMAIN_NAME" != "_" ]]; then
+  $SUDO certbot --nginx \
+    -d "$DOMAIN_NAME" \
+    -d "www.$DOMAIN_NAME" \
+    --non-interactive \
+    --agree-tos \
+    -m "${CERTBOT_EMAIL:-contact@mercury-editions.bf}" \
+    --redirect \
+    --keep-until-expiring
+fi
 
 sed \
   -e "s#__APP_DIR__#$APP_DIR#g" \
