@@ -21,6 +21,20 @@ const statusClass = {
   published: 'badge-success',
 };
 
+const priorityLabels = {
+  low: 'Basse',
+  normal: 'Normale',
+  high: 'Haute',
+  urgent: 'Urgente',
+};
+
+const priorityClass = {
+  low: 'badge-muted',
+  normal: 'badge-info',
+  high: 'badge-warning',
+  urgent: 'badge-danger',
+};
+
 const fallbackCollections = {
   'litterature-recits': 'Littérature & récits',
   'savoirs-societe': 'Savoirs & société',
@@ -28,18 +42,30 @@ const fallbackCollections = {
 };
 
 const statuses = Object.keys(statusLabels);
+const priorities = Object.keys(priorityLabels);
 
 export default function ManuscriptSubmissionManager() {
   const [submissions, setSubmissions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState('');
+  const [priorityFilter, setPriorityFilter] = useState('');
+  const [overdueOnly, setOverdueOnly] = useState(false);
   const [collectionFilter, setCollectionFilter] = useState('');
   const [collections, setCollections] = useState(fallbackCollections);
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
   const [meta, setMeta] = useState({});
   const [detail, setDetail] = useState(null);
-  const [draft, setDraft] = useState({ status: 'received', admin_notes: '' });
+  const [draft, setDraft] = useState({
+    status: 'received',
+    priority: 'normal',
+    reviewer_name: '',
+    editorial_score: '',
+    due_date: '',
+    next_action: '',
+    decision_reason: '',
+    admin_notes: '',
+  });
   const [notification, setNotification] = useState(null);
 
   const showNotif = (msg, type = 'success') => {
@@ -51,6 +77,8 @@ export default function ManuscriptSubmissionManager() {
     setLoading(true);
     const params = new URLSearchParams();
     if (statusFilter) params.set('status', statusFilter);
+    if (priorityFilter) params.set('priority', priorityFilter);
+    if (overdueOnly) params.set('overdue', '1');
     if (collectionFilter) params.set('collection', collectionFilter);
     if (search) params.set('search', search);
     params.set('page', page);
@@ -61,7 +89,7 @@ export default function ManuscriptSubmissionManager() {
         setMeta({ current_page: res.current_page, last_page: res.last_page, total: res.total });
       })
       .finally(() => setLoading(false));
-  }, [statusFilter, collectionFilter, search, page]);
+  }, [statusFilter, priorityFilter, overdueOnly, collectionFilter, search, page]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -78,7 +106,16 @@ export default function ManuscriptSubmissionManager() {
     try {
       const fresh = await api.get(`/admin/api/manuscripts/${submission.id}`);
       setDetail(fresh);
-      setDraft({ status: fresh.status, admin_notes: fresh.admin_notes || '' });
+      setDraft({
+        status: fresh.status,
+        priority: fresh.priority || 'normal',
+        reviewer_name: fresh.reviewer_name || '',
+        editorial_score: fresh.editorial_score ?? '',
+        due_date: fresh.due_date || '',
+        next_action: fresh.next_action || '',
+        decision_reason: fresh.decision_reason || '',
+        admin_notes: fresh.admin_notes || '',
+      });
     } catch (error) {
       showNotif(error.message || 'Impossible de charger le manuscrit.', 'error');
     }
@@ -88,9 +125,27 @@ export default function ManuscriptSubmissionManager() {
     if (!detail) return;
 
     try {
-      const updated = await api.patch(`/admin/api/manuscripts/${detail.id}`, draft);
+      const payload = {
+        ...draft,
+        editorial_score: draft.editorial_score === '' ? null : Number(draft.editorial_score),
+        due_date: draft.due_date || null,
+        reviewer_name: draft.reviewer_name || null,
+        next_action: draft.next_action || null,
+        decision_reason: draft.decision_reason || null,
+        admin_notes: draft.admin_notes || null,
+      };
+      const updated = await api.patch(`/admin/api/manuscripts/${detail.id}`, payload);
       setDetail(updated);
-      setDraft({ status: updated.status, admin_notes: updated.admin_notes || '' });
+      setDraft({
+        status: updated.status,
+        priority: updated.priority || 'normal',
+        reviewer_name: updated.reviewer_name || '',
+        editorial_score: updated.editorial_score ?? '',
+        due_date: updated.due_date || '',
+        next_action: updated.next_action || '',
+        decision_reason: updated.decision_reason || '',
+        admin_notes: updated.admin_notes || '',
+      });
       showNotif('Suivi éditorial mis à jour.');
       load();
     } catch (error) {
@@ -125,10 +180,18 @@ export default function ManuscriptSubmissionManager() {
           <option value="">Tous les statuts</option>
           {statuses.map((status) => <option key={status} value={status}>{statusLabels[status]}</option>)}
         </select>
+        <select value={priorityFilter} onChange={(e) => { setPriorityFilter(e.target.value); setPage(1); }} className="admin-filter-select">
+          <option value="">Toutes les priorités</option>
+          {priorities.map((priority) => <option key={priority} value={priority}>{priorityLabels[priority]}</option>)}
+        </select>
         <select value={collectionFilter} onChange={(e) => { setCollectionFilter(e.target.value); setPage(1); }} className="admin-filter-select">
           <option value="">Toutes les collections</option>
           {Object.entries(collections).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
         </select>
+        <label className="admin-checkbox-filter">
+          <input type="checkbox" checked={overdueOnly} onChange={(e) => { setOverdueOnly(e.target.checked); setPage(1); }} />
+          En retard
+        </label>
       </div>
 
       {loading ? (
@@ -143,6 +206,7 @@ export default function ManuscriptSubmissionManager() {
                   <th>Auteur</th>
                   <th>Collection</th>
                   <th>Statut</th>
+                  <th>Suivi</th>
                   <th>Date</th>
                   <th>Actions</th>
                 </tr>
@@ -160,13 +224,20 @@ export default function ManuscriptSubmissionManager() {
                     </td>
                     <td>{collections[submission.collection] || submission.collection}</td>
                     <td><span className={`badge ${statusClass[submission.status] || 'badge-muted'}`}>{statusLabels[submission.status] || submission.status}</span></td>
+                    <td>
+                      <div><span className={`badge ${priorityClass[submission.priority] || 'badge-muted'}`}>{priorityLabels[submission.priority] || 'Normale'}</span></div>
+                      <div className="text-sm text-muted manuscript-followup">
+                        {submission.reviewer_name || 'Lecteur non assigné'}
+                        {submission.due_date ? ` · ${new Date(submission.due_date).toLocaleDateString('fr-FR')}` : ''}
+                      </div>
+                    </td>
                     <td>{new Date(submission.created_at).toLocaleDateString('fr-FR')}</td>
                     <td>
                       <button className="btn-admin btn-secondary btn-sm" onClick={() => openDetail(submission)}>Ouvrir</button>
                     </td>
                   </tr>
                 ))}
-                {submissions.length === 0 && <tr><td colSpan="6" className="admin-empty">Aucun manuscrit reçu.</td></tr>}
+                {submissions.length === 0 && <tr><td colSpan="7" className="admin-empty">Aucun manuscrit reçu.</td></tr>}
               </tbody>
             </table>
           </div>
@@ -196,6 +267,10 @@ export default function ManuscriptSubmissionManager() {
                 <div><strong>Collection:</strong> {collections[detail.collection] || detail.collection}</div>
                 <div><strong>Genre:</strong> {detail.genre || 'Non renseigné'}</div>
                 <div><strong>Pages:</strong> {detail.page_count || 'Non renseigné'}</div>
+                <div><strong>Priorité:</strong> {priorityLabels[detail.priority] || 'Normale'}</div>
+                <div><strong>Lecteur:</strong> {detail.reviewer_name || 'Non assigné'}</div>
+                <div><strong>Score:</strong> {detail.editorial_score ?? 'Non noté'}</div>
+                <div><strong>Échéance:</strong> {detail.due_date ? new Date(detail.due_date).toLocaleDateString('fr-FR') : 'Non fixée'}</div>
                 <div><strong>Reçu le:</strong> {new Date(detail.created_at).toLocaleString('fr-FR')}</div>
                 <div><strong>Dernière revue:</strong> {detail.reviewed_at ? new Date(detail.reviewed_at).toLocaleString('fr-FR') : 'Non revue'}</div>
               </div>
@@ -224,6 +299,32 @@ export default function ManuscriptSubmissionManager() {
                   <select className="form-select" value={draft.status} onChange={(e) => setDraft((prev) => ({ ...prev, status: e.target.value }))}>
                     {statuses.map((status) => <option key={status} value={status}>{statusLabels[status]}</option>)}
                   </select>
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Priorité</label>
+                  <select className="form-select" value={draft.priority} onChange={(e) => setDraft((prev) => ({ ...prev, priority: e.target.value }))}>
+                    {priorities.map((priority) => <option key={priority} value={priority}>{priorityLabels[priority]}</option>)}
+                  </select>
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Lecteur responsable</label>
+                  <input className="form-input" value={draft.reviewer_name} onChange={(e) => setDraft((prev) => ({ ...prev, reviewer_name: e.target.value }))} placeholder="Nom du lecteur ou éditeur" />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Score éditorial / 100</label>
+                  <input className="form-input" type="number" min="0" max="100" value={draft.editorial_score} onChange={(e) => setDraft((prev) => ({ ...prev, editorial_score: e.target.value }))} placeholder="75" />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Échéance de lecture</label>
+                  <input className="form-input" type="date" value={draft.due_date} onChange={(e) => setDraft((prev) => ({ ...prev, due_date: e.target.value }))} />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Prochaine action</label>
+                  <input className="form-input" value={draft.next_action} onChange={(e) => setDraft((prev) => ({ ...prev, next_action: e.target.value }))} placeholder="Relire, contacter auteur, demander extrait..." />
+                </div>
+                <div className="form-group full">
+                  <label className="form-label">Motif de décision</label>
+                  <textarea className="form-textarea" rows={3} value={draft.decision_reason} onChange={(e) => setDraft((prev) => ({ ...prev, decision_reason: e.target.value }))} placeholder="Pourquoi accepter, refuser ou poursuivre l'évaluation..." />
                 </div>
                 <div className="form-group full">
                   <label className="form-label">Notes internes</label>

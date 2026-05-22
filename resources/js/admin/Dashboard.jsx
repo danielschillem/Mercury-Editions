@@ -49,6 +49,20 @@ const manuscriptStatusClass = {
   published: 'badge-success',
 };
 
+const manuscriptPriorityLabels = {
+  low: 'Basse',
+  normal: 'Normale',
+  high: 'Haute',
+  urgent: 'Urgente',
+};
+
+const manuscriptPriorityClass = {
+  low: 'badge-muted',
+  normal: 'badge-info',
+  high: 'badge-warning',
+  urgent: 'badge-danger',
+};
+
 const fallbackCollections = {
   'litterature-recits': 'Littérature & récits',
   'savoirs-societe': 'Savoirs & société',
@@ -128,7 +142,7 @@ export default function Dashboard({ navigateToPage }) {
         </div>
       </div>
 
-      <div className="stats-grid stats-grid-3 editorial-stats-grid">
+      <div className="stats-grid stats-grid-4 editorial-stats-grid">
         <div className="stat-card stat-card-accent stat-card-editorial">
           <div className="stat-card-icon stat-icon-red">{statIcons.manuscripts}</div>
           <div className="stat-card-content">
@@ -148,6 +162,13 @@ export default function Dashboard({ navigateToPage }) {
           <div className="stat-card-content">
             <div className="stat-card-value">{stats.total_manuscripts || 0}</div>
             <div className="stat-card-label">Manuscrits reçus</div>
+          </div>
+        </div>
+        <div className="stat-card stat-card-accent">
+          <div className="stat-card-icon stat-icon-red">{statIcons.manuscripts}</div>
+          <div className="stat-card-content">
+            <div className="stat-card-value">{stats.overdue_manuscripts || 0}</div>
+            <div className="stat-card-label">Lectures en retard</div>
           </div>
         </div>
       </div>
@@ -275,10 +296,13 @@ export default function Dashboard({ navigateToPage }) {
                   </div>
                 </div>
                 <div className="manuscript-dashboard-side">
+                  <span className={`badge ${manuscriptPriorityClass[manuscript.priority] || 'badge-muted'}`}>
+                    {manuscriptPriorityLabels[manuscript.priority] || 'Normale'}
+                  </span>
                   <span className={`badge ${manuscriptStatusClass[manuscript.status] || 'badge-muted'}`}>
                     {manuscriptStatusLabels[manuscript.status] || manuscript.status}
                   </span>
-                  <span className="text-sm text-muted">{new Date(manuscript.created_at).toLocaleDateString('fr-FR')}</span>
+                  <span className="text-sm text-muted">{manuscript.due_date ? new Date(manuscript.due_date).toLocaleDateString('fr-FR') : new Date(manuscript.created_at).toLocaleDateString('fr-FR')}</span>
                 </div>
               </div>
             ))}

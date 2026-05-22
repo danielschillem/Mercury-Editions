@@ -9,6 +9,7 @@ Set these in GitHub: `Settings` -> `Secrets and variables` -> `Actions` -> `Secr
 - `SSH_PRIVATE_KEY`: private key allowed to SSH into the droplet
 - `SSH_PRIVATE_KEY_B64`: preferred alternative to `SSH_PRIVATE_KEY`; base64-encoded private key, avoids multiline formatting issues
 - `APP_KEY`: Laravel app key for production
+- `DB_PASSWORD`: PostgreSQL password for the production application user
 
 ## Built-in Defaults
 
@@ -24,7 +25,7 @@ Set these in GitHub: `Settings` -> `Secrets and variables` -> `Actions` -> `Vari
 - `DROPLET_IP`: overrides the default droplet IP
 - `DOMAIN_NAME`: overrides the default production domain
 - `APP_TIMEZONE`, `APP_LOCALE`, `LOG_CHANNEL`, `LOG_LEVEL`
-- `DB_CONNECTION`, `SESSION_DRIVER`, `QUEUE_CONNECTION`, `CACHE_STORE`
+- `DB_CONNECTION`, `DB_DATABASE`, `DB_USERNAME`, `DB_PORT`, `SESSION_DRIVER`, `QUEUE_CONNECTION`, `CACHE_STORE`
 
 ## Optional GitHub Secrets
 
@@ -41,7 +42,7 @@ On `main`, `master`, or a manual workflow dispatch, GitHub Actions will:
 2. build Vite assets with Node 22;
 3. verify the droplet through DigitalOcean when `DIGITALOCEAN_TOKEN` is set;
 4. update Hostinger `A` records for `@` and `www` when `HOSTINGER_TOKEN` is set;
-5. provision the droplet with Nginx, PHP 8.4, Composer, Node 22, Supervisor and SQLite;
+5. provision the droplet with Nginx, PHP 8.4, Composer, Node 22, Supervisor, PostgreSQL and Redis;
 6. sync the repository to the droplet;
 7. write the production `.env` from GitHub secrets and variables;
 8. run Composer, npm build, migrations, storage link, Laravel optimization, Nginx reload and queue worker restart.

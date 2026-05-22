@@ -1,6 +1,14 @@
 import { createContext, useContext, useState, useCallback, useRef } from 'react';
+import Icon from '../components/Icons';
 
 const ToastContext = createContext(null);
+
+const toastIconName = {
+  success: 'check',
+  error:   'close',
+  info:    'info',
+  warning: 'warning',
+};
 
 let toastId = 0;
 
@@ -35,10 +43,7 @@ export function ToastProvider({ children }) {
         {toasts.map(t => (
           <div key={t.id} className={`toast toast-${t.type}`} onClick={() => removeToast(t.id)}>
             <span className="toast-icon">
-              {t.type === 'success' && '✓'}
-              {t.type === 'error' && '✕'}
-              {t.type === 'info' && 'ℹ'}
-              {t.type === 'warning' && '⚠'}
+              <Icon name={toastIconName[t.type] || 'info'} size={18} />
             </span>
             <span className="toast-message">{t.message}</span>
           </div>

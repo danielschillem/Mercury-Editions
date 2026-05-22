@@ -79,9 +79,9 @@ export default function ManuscriptSubmissionModal({ onClose }) {
   };
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
+    <div className="modal-overlay active" onClick={onClose}>
       <div className="contact-modal manuscript-modal" onClick={(event) => event.stopPropagation()}>
-        <button className="modal-close" onClick={onClose}>✕</button>
+        <button className="modal-close" onClick={onClose} aria-label="Fermer"><Icon name="close" size={18} /></button>
         <div className="contact-modal-header">
           <Icon name="scroll" size={24} />
           <h2>Soumettre un manuscrit</h2>

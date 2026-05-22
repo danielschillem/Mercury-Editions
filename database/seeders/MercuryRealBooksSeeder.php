@@ -474,9 +474,9 @@ class MercuryRealBooksSeeder extends Seeder
         $legacyAuthorsDeleted = (clone $legacyAuthorsQuery)->count();
         $legacyAuthorsQuery->delete();
 
-        $this->command->info('✓ ' . count($books) . ' ouvrages Mercury réels créés/mis à jour.');
-        $this->command->info('✓ ' . count($authors) . ' auteurs Mercury réels créés/mis à jour.');
-        $this->command->info('✓ ' . $legacyBooksDeleted . ' ouvrages démo supprimés.');
-        $this->command->info('✓ ' . $legacyAuthorsDeleted . ' auteurs démo supprimés.');
+        $this->command->info('[OK] ' . count($books) . ' ouvrages Mercury réels créés/mis à jour.');
+        $this->command->info('[OK] ' . count($authors) . ' auteurs Mercury réels créés/mis à jour.');
+        $this->command->info('[OK] ' . $legacyBooksDeleted . ' ouvrages démo supprimés.');
+        $this->command->info('[OK] ' . $legacyAuthorsDeleted . ' auteurs démo supprimés.');
     }
 }

@@ -24,6 +24,16 @@ class ManuscriptSubmissionController extends Controller
             $query->where('collection', $request->input('collection'));
         }
 
+        if ($request->filled('priority')) {
+            $query->where('priority', $request->input('priority'));
+        }
+
+        if ($request->boolean('overdue')) {
+            $query
+                ->whereDate('due_date', '<', now()->toDateString())
+                ->whereNotIn('status', ['rejected', 'published']);
+        }
+
         if ($request->filled('search')) {
             $search = trim((string) $request->input('search'));
 
@@ -50,6 +60,12 @@ class ManuscriptSubmissionController extends Controller
     {
         $validated = $request->validate([
             'status' => ['required', Rule::in(ManuscriptSubmission::STATUSES)],
+            'priority' => ['nullable', Rule::in(ManuscriptSubmission::PRIORITIES)],
+            'reviewer_name' => ['nullable', 'string', 'max:120'],
+            'editorial_score' => ['nullable', 'integer', 'min:0', 'max:100'],
+            'due_date' => ['nullable', 'date'],
+            'next_action' => ['nullable', 'string', 'max:255'],
+            'decision_reason' => ['nullable', 'string', 'max:10000'],
             'admin_notes' => ['nullable', 'string', 'max:10000'],
         ]);
 

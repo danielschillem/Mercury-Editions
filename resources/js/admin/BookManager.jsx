@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { api } from './api';
+import Icon from '../components/Icons';
 
 const emptyBook = {
   title: '', author_id: '', editorial_collection_id: '', author_name: '', price: 0, category: 'roman',
@@ -170,7 +171,7 @@ export default function BookManager() {
     <div>
       {notification && (
         <div className={`admin-notif admin-notif-${notification.type}`}>
-          {notification.type === 'success' ? '✓' : '!'} {notification.msg}
+          <Icon name={notification.type === 'success' ? 'check' : 'warning'} size={16} /> {notification.msg}
         </div>
       )}
 

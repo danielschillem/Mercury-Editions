@@ -1,6 +1,6 @@
 <div align="center">
 
-# 📚 Mercury Editions
+# Mercury Editions
 
 **Maison d'édition numérique du Burkina Faso**
 
@@ -16,7 +16,7 @@
 
 ---
 
-## 📋 Table des matières
+## Table des matières
 
 - [Présentation](#-présentation)
 - [MVP — Produit Minimum Viable](#-mvp--produit-minimum-viable)
@@ -35,7 +35,7 @@
 
 ---
 
-## 🎯 Présentation
+## Présentation
 
 **Mercury Editions** est une application web SPA (Single Page Application) pour une maison d'édition numérique spécialisée dans la littérature burkinabè. Elle permet de publier, découvrir, acheter et lire des œuvres d'auteurs du Burkina Faso via un paiement mobile Orange Money.
 
@@ -54,7 +54,7 @@ Le projet valorise le patrimoine littéraire local en proposant un catalogue de 
 
 ---
 
-## 🚀 MVP — Produit Minimum Viable
+## MVP — Produit Minimum Viable
 
 > **Version 1.0.0** — 18 mars 2026
 
@@ -62,20 +62,20 @@ Le MVP livre les fonctionnalités essentielles pour une mise en ligne fonctionne
 
 | # | Fonctionnalité | Statut |
 |---|----------------|--------|
-| 1 | Catalogue de 11 livres avec recherche et filtrage par catégorie | ✅ Livré |
-| 2 | Fiches 10 auteurs détaillées (bio, chronologie, distinctions) | ✅ Livré |
-| 3 | Fiche livre complète (description, résumé, citation, specs) | ✅ Livré |
-| 4 | Panier d'achat persistant (localStorage) | ✅ Livré |
-| 5 | Paiement Orange Money avec OTP (mode simulation + production) | ✅ Livré |
-| 6 | Bibliothèque personnelle des achats | ✅ Livré |
-| 7 | Lecteur de livres numériques intégré | ✅ Livré |
-| 8 | Design responsive (mobile, tablette, desktop) | ✅ Livré |
-| 9 | SPA React sans rechargement de page | ✅ Livré |
-| 10 | Déploiement Hostinger-ready (archives dist/) | ✅ Livré |
+| 1 | Catalogue de 11 livres avec recherche et filtrage par catégorie | Livré |
+| 2 | Fiches 10 auteurs détaillées (bio, chronologie, distinctions) | Livré |
+| 3 | Fiche livre complète (description, résumé, citation, specs) | Livré |
+| 4 | Panier d'achat persistant (localStorage) | Livré |
+| 5 | Paiement Orange Money avec OTP (mode simulation + production) | Livré |
+| 6 | Bibliothèque personnelle des achats | Livré |
+| 7 | Lecteur de livres numériques intégré | Livré |
+| 8 | Design responsive (mobile, tablette, desktop) | Livré |
+| 9 | SPA React sans rechargement de page | Livré |
+| 10 | Déploiement Hostinger-ready (archives dist/) | Livré |
 
 ---
 
-## ✨ Fonctionnalités
+## Fonctionnalités
 
 ### Frontend
 
@@ -107,7 +107,7 @@ Le MVP livre les fonctionnalités essentielles pour une mise en ligne fonctionne
 
 ---
 
-## 🏗 Architecture technique
+## Architecture technique
 
 ```
 ┌─────────────────────────────────────────────────┐
@@ -149,7 +149,7 @@ Le MVP livre les fonctionnalités essentielles pour une mise en ligne fonctionne
 
 ---
 
-## 📌 Prérequis
+## Prérequis
 
 | Outil | Version minimum |
 |-------|----------------|
@@ -160,7 +160,7 @@ Le MVP livre les fonctionnalités essentielles pour une mise en ligne fonctionne
 
 ---
 
-## 🔧 Installation
+## Installation
 
 ```bash
 # 1. Cloner le dépôt
@@ -184,7 +184,7 @@ npm run build
 
 ---
 
-## ⚙ Configuration
+## Configuration
 
 ### Variables d'environnement (.env)
 
@@ -217,7 +217,7 @@ Checklist de déploiement recommandée : `docs/PRODUCTION_CHECKLIST.md`.
 
 ---
 
-## 🚀 Lancement
+## Lancement
 
 ```bash
 # Développement (serveur + Vite HMR)
@@ -237,9 +237,38 @@ L'application est accessible à : **http://localhost:8000**
 En développement, Vite (port **5173** fixe, `strictPort: true`) écrit son hot-file dans `public/hot`.
 Si Vite est arrêté brutalement et que ce fichier reste, Laravel chargera les assets depuis un serveur mort — supprimez-le manuellement : `rm public/hot`.
 
+### Docker
+
+Le projet inclut un environnement local Docker avec Laravel/PHP-FPM, Nginx, Vite, PostgreSQL, Redis et un worker de queue.
+
+```bash
+# Construire et lancer l'environnement
+docker compose up --build
+
+# Lancer en arrière-plan
+docker compose up -d --build
+
+# Exécuter les tests Laravel dans un environnement isolé
+docker compose -f docker-compose.yml -f docker-compose.test.yml run --rm tests
+
+# Arrêter l'environnement
+docker compose down
+```
+
+URLs locales :
+
+- Application : **http://localhost:8080**
+- Vite HMR : **http://localhost:5173**
+- PostgreSQL : **localhost:5432** (`mercury` / `mercury`)
+- Redis : **localhost:6379**
+
+La configuration Docker utilise `.env.docker`, PostgreSQL par défaut et Redis pour le cache/la queue, ce qui prépare la migration décrite dans `docs/GO_REACT_PYTHON_POSTGRES_STRATEGY.md`.
+
+Les tests Docker utilisent `.env.testing` et SQLite dans `/tmp`. Ils ne touchent pas à la base PostgreSQL locale utilisée par la plateforme.
+
 ---
 
-## 📁 Structure du projet
+## Structure du projet
 
 ```
 mercury/
@@ -314,7 +343,7 @@ mercury/
 
 ---
 
-## 💳 API — Paiement Orange Money
+## API — Paiement Orange Money
 
 ### `POST /api/payments/orange`
 
@@ -370,7 +399,7 @@ Accept: application/json
 
 ---
 
-## 🗺 Roadmap
+## Roadmap
 
 La roadmap produit ci-dessous couvre l'application. La transformation éditoriale complète est détaillée dans [`docs/EDITORIAL_ROADMAP.md`](docs/EDITORIAL_ROADMAP.md).
 
@@ -383,7 +412,7 @@ La roadmap produit ci-dessous couvre l'application. La transformation éditorial
 - [ ] Calendrier éditorial et lancements de nouveautés
 - [ ] Reporting auteur, droits et diffusion partenaires
 
-### v1.0.0 — MVP ✅ (18 mars 2026)
+### v1.0.0 — MVP (18 mars 2026)
 - [x] Catalogue de 11 livres avec recherche full-text et filtrage par catégorie
 - [x] 10 profils auteurs détaillés (bio, chronologie, distinctions)
 - [x] Panier d'achat (localStorage + sync serveur)
@@ -404,13 +433,13 @@ La roadmap produit ci-dessous couvre l'application. La transformation éditorial
 - [x] 31 tests feature couvrant tous les flux critiques
 - [x] Déploiement Hostinger-ready
 
-### v1.1.0 — Qualité & UX ✅ (Avril 2026)
+### v1.1.0 — Qualité & UX (Avril 2026)
 - [x] Mode sombre / clair (ThemeContext)
 - [x] PWA (Progressive Web App) — Service Worker + manifest
 - [x] Export des achats en PDF (jsPDF dans l'espace client)
 - [ ] Notifications push réelles — UI présente, backend push à connecter
 
-### v1.2.0 — Enrichissement catalogue 🚧 (Q3 2026)
+### v1.2.0 — Enrichissement catalogue (Q3 2026)
 - [ ] Catégories dynamiques depuis la base de données (actuellement hardcodées côté frontend)
 - [ ] Ajout de nouveaux ouvrages au catalogue (objectif : 20+ titres)
 - [ ] Recommandations personnalisées (basées sur les achats)
@@ -440,7 +469,7 @@ La roadmap produit ci-dessous couvre l'application. La transformation éditorial
 
 ---
 
-## 🤝 Contribution
+## Contribution
 
 Les contributions sont les bienvenues. Pour contribuer :
 
@@ -457,13 +486,13 @@ Les contributions sont les bienvenues. Pour contribuer :
 
 ---
 
-## 👨‍💻 Auteur
+## Auteur
 
 **Mercury Editions** — Développeur Full-Stack
 
 ---
 
-## 📄 Licence
+## Licence
 
 Copyright © 2026 Mercury Editions. Tous droits réservés.
 
@@ -471,7 +500,7 @@ Ce projet est distribué sous licence **MIT**. Voir le fichier [LICENSE](LICENSE
 
 ---
 
-## 📌 Version
+## Version
 
 | Version | Date | Description |
 |---------|------|-------------|

@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { api } from './api';
+import Icon from '../components/Icons';
 
 const emptyAuthor = {
   slug: '', name: '', icon: 'book', origin: '', born: '', died: '',
@@ -126,7 +127,7 @@ export default function AuthorManager() {
     <div>
       {notification && (
         <div className={`admin-notif admin-notif-${notification.type}`}>
-          {notification.type === 'success' ? '✓' : '!'} {notification.msg}
+          <Icon name={notification.type === 'success' ? 'check' : 'warning'} size={16} /> {notification.msg}
         </div>
       )}
 

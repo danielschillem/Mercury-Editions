@@ -30,6 +30,33 @@ if grep -q '^DB_CONNECTION=sqlite' "$SHARED_DIR/.env"; then
   ln -sfn "$SHARED_DIR/database/database.sqlite" database/database.sqlite
 fi
 
+set -a
+source "$SHARED_DIR/.env"
+set +a
+
+if [[ "${DB_CONNECTION:-}" == "pgsql" && ( "${DB_HOST:-127.0.0.1}" == "127.0.0.1" || "${DB_HOST:-}" == "localhost" ) ]]; then
+  if [[ ! "${DB_DATABASE:-}" =~ ^[A-Za-z_][A-Za-z0-9_]*$ || ! "${DB_USERNAME:-}" =~ ^[A-Za-z_][A-Za-z0-9_]*$ ]]; then
+    echo "DB_DATABASE and DB_USERNAME must be simple PostgreSQL identifiers." >&2
+    exit 1
+  fi
+
+  password_sql="${DB_PASSWORD//\'/\'\'}"
+  sudo -u postgres psql -v ON_ERROR_STOP=1 <<SQL
+DO \$\$
+BEGIN
+  IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = '${DB_USERNAME}') THEN
+    CREATE ROLE "${DB_USERNAME}" LOGIN PASSWORD '${password_sql}';
+  ELSE
+    ALTER ROLE "${DB_USERNAME}" WITH LOGIN PASSWORD '${password_sql}';
+  END IF;
+END
+\$\$;
+SELECT 'CREATE DATABASE "${DB_DATABASE}" OWNER "${DB_USERNAME}"'
+WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = '${DB_DATABASE}')\gexec
+ALTER DATABASE "${DB_DATABASE}" OWNER TO "${DB_USERNAME}";
+SQL
+fi
+
 composer install --no-dev --prefer-dist --optimize-autoloader --no-interaction
 npm ci
 npm run build

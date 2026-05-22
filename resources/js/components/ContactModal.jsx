@@ -35,9 +35,9 @@ export default function ContactModal({ onClose }) {
     };
 
     return (
-        <div className="modal-overlay" onClick={onClose}>
+        <div className="modal-overlay active" onClick={onClose}>
             <div className="contact-modal" onClick={(e) => e.stopPropagation()}>
-                <button className="modal-close" onClick={onClose}>✕</button>
+                <button className="modal-close" onClick={onClose} aria-label="Fermer"><Icon name="close" size={18} /></button>
                 <div className="contact-modal-header">
                     <Icon name="messageCircle" size={24} />
                     <h2>Nous contacter</h2>

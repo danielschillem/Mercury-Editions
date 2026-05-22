@@ -23,10 +23,13 @@ env:
   APP_FAKER_LOCALE: ${{ vars.APP_FAKER_LOCALE || 'fr_FR' }}
   LOG_CHANNEL: ${{ vars.LOG_CHANNEL || 'daily' }}
   LOG_LEVEL: ${{ vars.LOG_LEVEL || 'warning' }}
-  DB_CONNECTION: ${{ vars.DB_CONNECTION || 'sqlite' }}
-  SESSION_DRIVER: ${{ vars.SESSION_DRIVER || 'database' }}
-  QUEUE_CONNECTION: ${{ vars.QUEUE_CONNECTION || 'database' }}
-  CACHE_STORE: ${{ vars.CACHE_STORE || 'database' }}
+  DB_CONNECTION: ${{ vars.DB_CONNECTION || 'pgsql' }}
+  DB_DATABASE: ${{ vars.DB_DATABASE || 'mercury' }}
+  DB_USERNAME: ${{ vars.DB_USERNAME || 'mercury' }}
+  DB_PORT: ${{ vars.DB_PORT || '5432' }}
+  SESSION_DRIVER: ${{ vars.SESSION_DRIVER || 'redis' }}
+  QUEUE_CONNECTION: ${{ vars.QUEUE_CONNECTION || 'redis' }}
+  CACHE_STORE: ${{ vars.CACHE_STORE || 'redis' }}
   MAIL_MAILER: ${{ vars.MAIL_MAILER || 'smtp' }}
   MAIL_PORT: ${{ vars.MAIL_PORT || '587' }}
   ORANGE_OM_SIMULATE: ${{ vars.ORANGE_OM_SIMULATE || 'false' }}
@@ -42,7 +45,7 @@ jobs:
       - uses: shivammathur/setup-php@v2
         with:
           php-version: '8.4'
-          extensions: bcmath, curl, intl, mbstring, sqlite3, xml, zip
+          extensions: bcmath, curl, intl, mbstring, pgsql, redis, sqlite3, xml, zip
           coverage: none
 
       - name: Validate Composer metadata
@@ -128,10 +131,9 @@ jobs:
       - name: Write production environment
         env:
           SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+          SSH_PRIVATE_KEY_B64: ${{ secrets.SSH_PRIVATE_KEY_B64 }}
           APP_KEY: ${{ secrets.APP_KEY }}
           DB_HOST: ${{ secrets.DB_HOST }}
-          DB_PORT: ${{ secrets.DB_PORT }}
-          DB_USERNAME: ${{ secrets.DB_USERNAME }}
           DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
           MAIL_HOST: ${{ secrets.MAIL_HOST }}
           MAIL_USERNAME: ${{ secrets.MAIL_USERNAME }}

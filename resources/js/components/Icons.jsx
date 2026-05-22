@@ -122,7 +122,7 @@ export default function Icon({ name, size = 18, className = '', style = {}, stro
   );
 }
 
-// Star rating component (replaces ★½☆ emojis)
+// Star rating component — vector stars for ratings (full/half/empty)
 export function StarRating({ rating, size = 14 }) {
   const full = Math.floor(rating);
   const hasHalf = rating % 1 >= 0.5;
@@ -150,7 +150,7 @@ export function StarRating({ rating, size = 14 }) {
   );
 }
 
-// Burkina Faso flag (replaces 🇧🇫 emoji)
+// Burkina Faso flag — vector SVG
 export function FlagBF({ size = 16 }) {
   return (
     <svg width={size} height={Math.round(size * 0.67)} viewBox="0 0 18 12" style={{ display: 'inline-block', verticalAlign: 'middle', borderRadius: 2 }} aria-label="Burkina Faso">

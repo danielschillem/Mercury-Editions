@@ -66,6 +66,12 @@ class DashboardController extends Controller
                 'total_manuscripts' => ManuscriptSubmission::count(),
                 'new_manuscripts' => ManuscriptSubmission::where('status', 'received')->count(),
                 'active_manuscripts' => ManuscriptSubmission::whereNotIn('status', ['rejected', 'published'])->count(),
+                'urgent_manuscripts' => ManuscriptSubmission::where('priority', 'urgent')
+                    ->whereNotIn('status', ['rejected', 'published'])
+                    ->count(),
+                'overdue_manuscripts' => ManuscriptSubmission::whereDate('due_date', '<', now()->toDateString())
+                    ->whereNotIn('status', ['rejected', 'published'])
+                    ->count(),
             ],
             'dailyRevenue' => $revenueByDay,
             'topBooks'     => $topBooks,
@@ -73,7 +79,7 @@ class DashboardController extends Controller
             'recentManuscripts' => ManuscriptSubmission::query()
                 ->latest()
                 ->take(5)
-                ->get(['id', 'author_name', 'email', 'title', 'collection', 'genre', 'status', 'created_at']),
+                ->get(['id', 'author_name', 'email', 'title', 'collection', 'genre', 'status', 'priority', 'due_date', 'created_at']),
         ]);
     }
 }

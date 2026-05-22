@@ -4,21 +4,21 @@ import Icon from './Icons';
 const announcements = [
   {
     id: 1,
-    icon: '📚',
+    iconName: 'library',
     text: 'Nouveau — « Les Soleils des Indépendances » disponible le 1er Avril 2026',
     highlight: '1er Avril',
     link: '#catalogue',
   },
   {
     id: 2,
-    icon: '🎉',
+    iconName: 'celebrate',
     text: 'Lancement — Collection « Voix du Sahel » le 15 Avril 2026',
     highlight: '15 Avril',
     link: '#catalogue',
   },
   {
     id: 3,
-    icon: '✍️',
+    iconName: 'pen',
     text: 'Événement — Rencontre avec les auteurs à Ouagadougou le 20 Avril 2026',
     highlight: '20 Avril',
     link: '#auteurs',
@@ -56,7 +56,7 @@ export default function AnnouncementBanner() {
     <div className="announcement-banner">
       <div className="announcement-inner">
         <div className="announcement-content">
-          <span className="announcement-icon">{item.icon}</span>
+          <span className="announcement-icon"><Icon name={item.iconName} size={18} /></span>
           <a href={item.link} className="announcement-text" onClick={(e) => { e.preventDefault(); scrollToSection(item.link); }}>
             {item.text}
           </a>

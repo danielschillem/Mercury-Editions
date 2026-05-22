@@ -12,7 +12,7 @@ CURRENT_USER="$(id -un)"
 export DEBIAN_FRONTEND=noninteractive
 
 $SUDO apt-get update -qq
-$SUDO apt-get install -yqq ca-certificates curl gnupg lsb-release software-properties-common unzip git rsync nginx supervisor sqlite3
+$SUDO apt-get install -yqq ca-certificates curl gnupg lsb-release software-properties-common unzip git rsync sudo nginx supervisor sqlite3 postgresql postgresql-contrib redis-server
 
 if ! apt-cache show php8.4-cli >/dev/null 2>&1; then
   $SUDO add-apt-repository -y ppa:ondrej/php
@@ -21,7 +21,10 @@ fi
 
 $SUDO apt-get install -yqq \
   php8.4-cli php8.4-fpm php8.4-sqlite3 php8.4-mbstring php8.4-xml \
-  php8.4-curl php8.4-zip php8.4-bcmath php8.4-intl
+  php8.4-curl php8.4-zip php8.4-bcmath php8.4-intl php8.4-pgsql php8.4-redis
+
+$SUDO systemctl enable --now postgresql
+$SUDO systemctl enable --now redis-server
 
 if ! command -v node >/dev/null 2>&1 || [[ "$(node -v | sed 's/^v//' | cut -d. -f1)" != "$NODE_VERSION" ]]; then
   curl -fsSL "https://deb.nodesource.com/setup_${NODE_VERSION}.x" | $SUDO bash -

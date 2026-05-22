@@ -18,6 +18,13 @@ class ManuscriptSubmission extends Model
         'published',
     ];
 
+    public const PRIORITIES = [
+        'low',
+        'normal',
+        'high',
+        'urgent',
+    ];
+
     public const COLLECTIONS = [
         'litterature-recits',
         'savoirs-societe',
@@ -36,6 +43,12 @@ class ManuscriptSubmission extends Model
         'synopsis',
         'author_note',
         'status',
+        'priority',
+        'reviewer_name',
+        'editorial_score',
+        'due_date',
+        'next_action',
+        'decision_reason',
         'admin_notes',
         'reviewed_at',
     ];
@@ -44,6 +57,8 @@ class ManuscriptSubmission extends Model
     {
         return [
             'page_count' => 'integer',
+            'editorial_score' => 'integer',
+            'due_date' => 'date:Y-m-d',
             'reviewed_at' => 'datetime',
         ];
     }

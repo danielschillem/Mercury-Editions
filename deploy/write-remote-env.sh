@@ -1,13 +1,19 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-required=(DROPLET_IP SSH_PRIVATE_KEY APP_KEY DOMAIN_NAME)
+required=(DROPLET_IP APP_KEY DOMAIN_NAME)
 for name in "${required[@]}"; do
   if [[ -z "${!name:-}" ]]; then
     echo "Missing required CI variable: $name" >&2
     exit 1
   fi
 done
+
+DB_CONNECTION="${DB_CONNECTION:-pgsql}"
+if [[ "$DB_CONNECTION" == "pgsql" && -z "${DB_PASSWORD:-}" ]]; then
+  echo "Missing required CI secret: DB_PASSWORD is required for PostgreSQL production." >&2
+  exit 1
+fi
 
 DEPLOY_USER="${DEPLOY_USER:-root}"
 DEPLOY_PATH="${DEPLOY_PATH:-/var/www/mercury-editions}"
@@ -28,14 +34,14 @@ APP_FAKER_LOCALE=${APP_FAKER_LOCALE:-fr_FR}
 LOG_CHANNEL=${LOG_CHANNEL:-daily}
 LOG_LEVEL=${LOG_LEVEL:-warning}
 
-DB_CONNECTION=${DB_CONNECTION:-sqlite}
-DB_DATABASE=${DB_DATABASE:-$DEPLOY_PATH/shared/database/database.sqlite}
+DB_CONNECTION=${DB_CONNECTION}
+DB_DATABASE=${DB_DATABASE:-mercury}
 DB_HOST=${DB_HOST:-127.0.0.1}
-DB_PORT=${DB_PORT:-3306}
-DB_USERNAME=${DB_USERNAME:-}
+DB_PORT=${DB_PORT:-5432}
+DB_USERNAME=${DB_USERNAME:-mercury}
 DB_PASSWORD=${DB_PASSWORD:-}
 
-SESSION_DRIVER=${SESSION_DRIVER:-database}
+SESSION_DRIVER=${SESSION_DRIVER:-redis}
 SESSION_LIFETIME=${SESSION_LIFETIME:-120}
 SESSION_ENCRYPT=true
 SESSION_PATH=/
@@ -45,8 +51,13 @@ SESSION_SAME_SITE=${SESSION_SAME_SITE:-lax}
 
 BROADCAST_CONNECTION=${BROADCAST_CONNECTION:-log}
 FILESYSTEM_DISK=${FILESYSTEM_DISK:-local}
-QUEUE_CONNECTION=${QUEUE_CONNECTION:-database}
-CACHE_STORE=${CACHE_STORE:-database}
+QUEUE_CONNECTION=${QUEUE_CONNECTION:-redis}
+CACHE_STORE=${CACHE_STORE:-redis}
+
+REDIS_CLIENT=${REDIS_CLIENT:-phpredis}
+REDIS_HOST=${REDIS_HOST:-127.0.0.1}
+REDIS_PASSWORD=${REDIS_PASSWORD:-null}
+REDIS_PORT=${REDIS_PORT:-6379}
 
 MAIL_MAILER=${MAIL_MAILER:-smtp}
 MAIL_SCHEME=${MAIL_SCHEME:-null}

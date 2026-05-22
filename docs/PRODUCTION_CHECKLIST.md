@@ -8,6 +8,8 @@
 - `APP_URL=https://votre-domaine.tld`
 - `APP_TIMEZONE=UTC`
 - `LOG_LEVEL=warning` (ou `error`)
+- `DB_CONNECTION=pgsql`
+- `DB_DATABASE`, `DB_USERNAME`, `DB_PASSWORD` renseignés
 - `MAIL_MAILER=smtp` (pas `log`) + `MAIL_PORT=587` ou `465`
 - `MERCURY_EDITORIAL_EMAIL` renseigné pour recevoir les nouvelles soumissions de manuscrits
 - `CACHE_STORE=redis` (ou store robuste de prod)

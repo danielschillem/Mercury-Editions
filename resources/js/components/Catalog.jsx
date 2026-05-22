@@ -593,7 +593,7 @@ export function BookDetail({ bookId, onClose }) {
                       <div key={review.id} style={{ border: '1px solid rgba(0,0,0,0.08)', borderRadius: '10px', padding: '0.85rem' }}>
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem' }}>
                           <strong>{review.user?.name || 'Lecteur Mercury'}</strong>
-                          <span style={{ color: 'var(--gold)' }}>{'★'.repeat(review.rating)}{'☆'.repeat(5 - review.rating)}</span>
+                          <StarRating rating={review.rating} size={14} />
                         </div>
                         {review.title && <div style={{ marginTop: '0.3rem', fontWeight: 700 }}>{review.title}</div>}
                         <p style={{ marginTop: '0.35rem' }}>{review.comment}</p>

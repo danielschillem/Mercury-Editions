@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { api } from './api';
+import Icon from '../components/Icons';
 
 const statusLabels = { pending: 'En attente', completed: 'Terminee', failed: 'Echouee' };
 const statusClass  = { completed: 'badge-success', pending: 'badge-warning', failed: 'badge-danger' };
@@ -64,7 +65,7 @@ export default function OrderManager() {
     <div>
       {notification && (
         <div className={`admin-notif admin-notif-${notification.type}`}>
-          {notification.type === 'success' ? '✓' : '!'} {notification.msg}
+          <Icon name={notification.type === 'success' ? 'check' : 'warning'} size={16} /> {notification.msg}
         </div>
       )}
 
