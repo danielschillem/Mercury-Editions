@@ -24,6 +24,14 @@ ln -sfn "$SHARED_DIR/.env" .env
 rm -rf storage
 ln -sfn "$SHARED_DIR/storage" storage
 
+mkdir -p \
+  storage/app/public \
+  storage/framework/cache/data \
+  storage/framework/sessions \
+  storage/framework/testing \
+  storage/framework/views \
+  storage/logs
+
 if grep -q '^DB_CONNECTION=sqlite' "$SHARED_DIR/.env"; then
   touch "$SHARED_DIR/database/database.sqlite"
   mkdir -p database
