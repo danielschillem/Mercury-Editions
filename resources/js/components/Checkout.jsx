@@ -33,7 +33,7 @@ function isValidBurkinaMobile(raw) {
 const delay = ms => new Promise(r => setTimeout(r, ms));
 
 export default function Checkout() {
-  const { cart, cartTotal, closeModal, openModal, addPurchase, clearCart } = useApp();
+  const { cart, cartTotal, closeModal, openModal, addPurchase, clearCart, removeFromCart } = useApp();
   const { user, loading: authLoading } = useAuth();
   const toast = useToast();
 
@@ -597,7 +597,7 @@ export default function Checkout() {
           <aside className="mynapay-summary">
             <div className="mynapay-customer"><div>{user.name?.charAt(0)?.toUpperCase()}</div><span><small>Compte Mercury</small><strong>{user.name}</strong><em>{user.email}</em></span></div>
             <div className="mynapay-summary-title"><span>Votre commande</span><small>{itemCount} article{itemCount > 1 ? 's' : ''}</small></div>
-            <div className="mynapay-items">{cart.map(item => <div className="mynapay-item" key={`${item.id}-${item.format}`}><div>{item.cover_image ? <img src={item.cover_image} alt="" /> : <span>{item.title.charAt(0)}</span>}</div><section><strong>{item.title}</strong><small>{item.format === 'physical' ? 'Livre papier' : 'Ebook'} · ×{item.quantity || 1}</small></section><b>{(item.finalPrice * (item.quantity || 1)).toLocaleString('fr-FR')} F</b></div>)}</div>
+            <div className="mynapay-items">{cart.map(item => <div className="mynapay-item" key={`${item.id}-${item.format}`}><div>{item.cover_image ? <img src={item.cover_image} alt="" /> : <span>{item.title.charAt(0)}</span>}</div><section><strong>{item.title}</strong><small>{item.format === 'physical' ? 'Livre papier' : 'Ebook'} · ×{item.quantity || 1}</small></section><b>{(item.finalPrice * (item.quantity || 1)).toLocaleString('fr-FR')} F</b>{step === 1 && <button type="button" className="mynapay-item-remove" onClick={() => removeFromCart(item.id, item.format)} aria-label={`Retirer ${item.title} du panier`} title="Retirer du panier"><Icon name="close" size={14} /></button>}</div>)}</div>
             <div className="mynapay-totals"><div><span>Sous-total</span><b>{cartTotal.toLocaleString('fr-FR')} F</b></div><div><span>Frais mobile money</span><b>{fees.toLocaleString('fr-FR')} F</b></div><div className="total"><span>Total</span><b>{total.toLocaleString('fr-FR')} <small>FCFA</small></b></div></div>
             <div className="mynapay-route"><div><span>Mercury</span><Icon name="arrowRight" size={12} /><span>MynaPay</span><Icon name="arrowRight" size={12} /><span>{selectedOperator === 'moov' ? 'Moov' : 'Orange'}</span></div><p><Icon name="shield" size={13} /> API backend, idempotence et contrôle du statut</p></div>
             <button className="mynapay-cancel" onClick={handleClose}>Annuler le paiement</button>

@@ -615,9 +615,7 @@ export function BookDetail({ bookId, onClose }) {
               <div key={s.id} className="similar-card" onClick={() => { onClose(); setTimeout(() => openModal('bookDetail', s.id), 100); }}>
                 <div className="similar-card-cover" style={{ background: `linear-gradient(135deg, ${s.color}18, ${s.color}08)` }}>
                   <div className="similar-match-badge">{s.matchScore}% match</div>
-                  <div className="similar-card-mini-cover" style={{ background: `linear-gradient(135deg, ${s.color}, ${s.color}CC)` }}>
-                    <span>{s.title}</span>
-                  </div>
+                  {s.cover_image ? <img className="similar-card-cover-img" src={s.cover_image} alt={`Couverture de ${s.title}`} /> : <div className="similar-card-mini-cover" style={{ background: `linear-gradient(135deg, ${s.color}, ${s.color}CC)` }}><span>{s.title}</span></div>}
                 </div>
                 <div className="similar-card-info">
                   <div className="similar-card-title">{s.title}</div>
