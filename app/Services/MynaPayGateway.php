@@ -11,10 +11,20 @@ use Illuminate\Support\Facades\Http;
 class MynaPayGateway
 {
     /** @throws ConnectionException */
-    public function createOrangeCollection(array $payload, string $idempotencyKey): Response
+    public function createCollection(array $payload, string $idempotencyKey): Response
     {
         return $this->request($idempotencyKey)
             ->post('/api/v1/collections', $payload + ['idempotency_key' => $idempotencyKey]);
+    }
+
+    /**
+     * @deprecated Use createCollection() for operator-neutral collections.
+     *
+     * @throws ConnectionException
+     */
+    public function createOrangeCollection(array $payload, string $idempotencyKey): Response
+    {
+        return $this->createCollection($payload, $idempotencyKey);
     }
 
     /** @throws ConnectionException */

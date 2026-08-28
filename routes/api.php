@@ -38,8 +38,11 @@ Route::middleware('auth')->group(function () {
     Route::patch('/orders/{order}/fail', [OrderController::class, 'fail']);
 });
 
-// Paiement Orange Money
+// Paiements mobile money via MynaPay (Orange et Moov)
 Route::get('/payments/config', [PaymentController::class, 'configuration']);
+Route::post('/payments/mobile', [PaymentController::class, 'processMobileMoney'])->middleware('throttle:10,1');
+Route::post('/payments/mobile/{collectionId}/check', [PaymentController::class, 'checkOrangeMoney'])
+    ->whereUuid('collectionId')->middleware('throttle:20,1');
 Route::post('/payments/orange', [PaymentController::class, 'processOrangeMoney'])->middleware('throttle:10,1');
 Route::post('/payments/orange/{collectionId}/check', [PaymentController::class, 'checkOrangeMoney'])
     ->whereUuid('collectionId')->middleware('throttle:20,1');

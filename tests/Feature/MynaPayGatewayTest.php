@@ -35,9 +35,35 @@ class MynaPayGatewayTest extends TestCase
                 'simulation' => true,
                 'operator' => 'orange',
                 'flow' => 'collection_otp',
+                'operators' => [
+                    ['id' => 'orange', 'name' => 'Orange Money', 'flow' => 'otp'],
+                    ['id' => 'moov', 'name' => 'Moov Money', 'flow' => 'push'],
+                ],
                 'status_check' => true,
             ])
             ->assertJsonMissing(['api_key' => 'secret-partner-key']);
+    }
+
+    public function test_moov_push_collection_is_sent_without_otp(): void
+    {
+        Http::fake([
+            'gateway.example.test/api/v1/collections' => Http::response([
+                'collection_id' => 'a1dba5a8-e122-4bbf-a677-7b9fc9fdd500',
+                'operator_ref' => 'MOOV-COL-42',
+                'status' => 'success',
+            ], 202),
+        ]);
+
+        $this->postJson('/api/payments/mobile', [
+            'operator' => 'moov', 'phone' => '70123456', 'amount' => 2500,
+            'refNumber' => 'ORDER-MOOV-0001', 'extTxnId' => 'ORDER-MOOV-0001',
+        ])->assertOk()
+            ->assertJsonPath('operator', 'moov')
+            ->assertJsonPath('transId', 'MOOV-COL-42');
+
+        Http::assertSent(fn (Request $request): bool => $request['operator'] === 'moov'
+            && $request['payer_phone'] === '22670123456'
+            && ! isset($request['otp']));
     }
 
     public function test_orange_collection_is_sent_to_mynapay_with_backend_credentials_and_idempotency(): void

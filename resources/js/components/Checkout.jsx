@@ -5,7 +5,7 @@ import { useToast } from '../context/ToastContext';
 import Icon from './Icons';
 
 const OM_CONFIG = {
-  paymentEndpoint: '/api/payments/orange',
+  paymentEndpoint: '/api/payments/mobile',
   production: { ussd_prefix: '*144*4*6*', ussd_suffix: '#' },
   sandbox: { ussd_prefix: '*865*4*6*', ussd_suffix: '#' },
 };
@@ -49,7 +49,8 @@ export default function Checkout() {
   const [logs, setLogs] = useState([]);
   const [result, setResult] = useState(null);
   const [shipping, setShipping] = useState({ address: '', city: '', notes: '' });
-  const [gateway, setGateway] = useState({ provider: 'MynaPay', environment: 'sandbox', simulation: false, operator: 'orange', flow: 'collection_otp', status_check: true });
+  const [gateway, setGateway] = useState({ provider: 'MynaPay', environment: 'sandbox', simulation: false, operators: [{ id: 'orange', name: 'Orange Money', flow: 'otp' }, { id: 'moov', name: 'Moov Money', flow: 'push' }], status_check: true });
+  const [selectedOperator, setSelectedOperator] = useState('orange');
   const otpRefs = useRef([]);
   const timerRef = useRef(null);
 
@@ -155,6 +156,10 @@ export default function Checkout() {
     }
     setPhone(norm);
     setPhoneError('');
+    if (selectedOperator === 'moov') {
+      processPayment('moov');
+      return;
+    }
     goToStep(2);
   };
 
@@ -179,8 +184,9 @@ export default function Checkout() {
   const otpValue = otp.join('');
   const otpComplete = otpValue.length === 6;
 
-  const processPayment = useCallback(async () => {
-    if (!/^\d{6}$/.test(otpValue)) {
+  const processPayment = useCallback(async (operatorOverride = null) => {
+    const operator = typeof operatorOverride === 'string' ? operatorOverride : selectedOperator;
+    if (operator === 'orange' && !/^\d{6}$/.test(otpValue)) {
       setOtpError('Veuillez saisir un code OTP valide (6 chiffres).');
       return;
     }
@@ -209,7 +215,7 @@ export default function Checkout() {
     await delay(600);
     addLog(`Passerelle ${gateway.provider} · environnement ${gateway.simulation ? 'simulation locale' : gateway.environment}`, 'ok');
     await delay(500);
-    addLog('Préparation de la collecte Orange Money...');
+    addLog(`Préparation de la collecte ${operator === 'moov' ? 'Moov Money' : 'Orange Money'}...`);
     await delay(400);
     addLog(`Requête: customer_msisdn=${phone}, amount=${total} FCFA`);
 
@@ -251,10 +257,10 @@ export default function Checkout() {
       await delay(400);
       addLog('Transmission de la collecte à l’API MynaPay...', 'warn');
       await delay(1200);
-      addLog('MynaPay transmet l’OTP au rail Orange Money...');
+      addLog(operator === 'moov' ? 'MynaPay envoie la demande de confirmation sur votre téléphone Moov...' : 'MynaPay transmet l’OTP au rail Orange Money...');
       await delay(800);
 
-      // 2) Lancer le paiement Orange Money
+      // 2) Lancer la collecte mobile money sélectionnée
       addLog('Envoi sécurisé vers le backend de paiement...', 'warn');
       await delay(500);
 
@@ -262,7 +268,7 @@ export default function Checkout() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
         credentials: 'include',
-        body: JSON.stringify({ phone, amount: total, otp: otpValue, refNumber, extTxnId }),
+        body: JSON.stringify({ phone, amount: total, operator, ...(operator === 'orange' ? { otp: otpValue } : {}), refNumber, extTxnId }),
       });
 
       let data = await response.json();
@@ -271,7 +277,7 @@ export default function Checkout() {
       // opérateur. La commande reste pending tant que le statut n'est pas final.
       if (response.ok && data.status === 'pending' && data.collectionId) {
         addLog('Paiement reçu par MynaPay, confirmation opérateur en attente...', 'warn');
-        for (let attempt = 0; attempt < 5 && data.status === 'pending'; attempt++) {
+        for (let attempt = 0; attempt < 8 && data.status === 'pending'; attempt++) {
           await delay(2000);
           const checkResponse = await fetch(
             `${OM_CONFIG.paymentEndpoint}/${encodeURIComponent(data.collectionId)}/check`,
@@ -294,7 +300,7 @@ export default function Checkout() {
         setResult({
           type: 'partial',
           data: {
-            amount: Number(data.amount || total), phone: data.phone || phone, refNumber, extTxnId,
+            amount: Number(data.amount || total), phone: data.phone || phone, operator, refNumber, extTxnId,
             date: new Date().toLocaleString('fr-FR'),
             message: 'Paiement en cours de confirmation chez l’opérateur. Ne recommencez pas la transaction ; contactez le support avec la référence de commande.',
           },
@@ -305,13 +311,13 @@ export default function Checkout() {
       if (!response.ok || data.status !== 'success') {
         const errCode = data?.errorCode || String(response.status || '90001');
         addLog(`Erreur ${errCode}: ${data?.message || 'Echec'}`, 'warn');
-        await markOrderFailed(data?.message || 'Paiement Orange Money refusé.');
+        await markOrderFailed(data?.message || `Paiement ${operator === 'moov' ? 'Moov Money' : 'Orange Money'} refusé.`);
         await delay(300);
         setResult({ type: 'error', data: { errorCode: errCode, message: data?.message || OM_ERRORS[errCode] || 'Erreur inconnue.' } });
         return;
       }
 
-      addLog('Collecte confirmée par MynaPay et Orange Money.', 'ok');
+      addLog(`Collecte confirmée par MynaPay et ${operator === 'moov' ? 'Moov Money' : 'Orange Money'}.`, 'ok');
       await delay(300);
       addLog(`TransID: ${data.transId}`, 'ok');
       await delay(200);
@@ -358,7 +364,7 @@ export default function Checkout() {
       }
 
       if (!completeSuccess) {
-        // Le paiement Orange Money a réussi mais la confirmation en DB a échoué
+        // Le paiement mobile money a réussi mais la confirmation en DB a échoué
         addLog('ATTENTION: Paiement effectué mais confirmation non enregistrée!', 'warn');
         setResult({
           type: 'partial',
@@ -366,10 +372,11 @@ export default function Checkout() {
             transId: data.transId,
             amount: Number(data.amount || total),
             phone: data.phone || phone,
+            operator,
             refNumber,
             extTxnId,
             date: new Date().toLocaleString('fr-FR'),
-            message: 'Votre paiement Orange Money a été effectué, mais nous n\'avons pas pu confirmer la commande. Veuillez contacter le support avec votre numéro de transaction.'
+            message: `Votre paiement ${operator === 'moov' ? 'Moov Money' : 'Orange Money'} a été effectué, mais nous n’avons pas pu confirmer la commande. Veuillez contacter le support avec votre numéro de transaction.`
           }
         });
         toast.warning('Paiement effectué mais confirmation en attente. Contactez le support.');
@@ -397,7 +404,7 @@ export default function Checkout() {
 
       setResult({
         type: 'success',
-        data: { transId: data.transId, amount: Number(data.amount || total), phone: data.phone || phone, refNumber, extTxnId, date: new Date().toLocaleString('fr-FR') }
+        data: { transId: data.transId, amount: Number(data.amount || total), phone: data.phone || phone, operator, refNumber, extTxnId, date: new Date().toLocaleString('fr-FR') }
       });
       toast.success('Paiement effectué avec succès !');
     } catch (err) {
@@ -408,7 +415,7 @@ export default function Checkout() {
       setResult({ type: 'error', data: { errorCode: '90001', message: 'Erreur réseau.' } });
       toast.error('Erreur de communication avec le serveur.');
     }
-  }, [otpValue, phone, total, cart, addPurchase, name, email, toast, hasPhysical, shipping, gateway]);
+  }, [otpValue, phone, total, cart, addPurchase, name, email, toast, hasPhysical, shipping, gateway, selectedOperator]);
 
   const retry = () => {
     setResult(null);
@@ -431,7 +438,7 @@ export default function Checkout() {
     1: {
       eyebrow: 'Etape 1',
       title: 'Confirmez vos informations de paiement',
-      description: 'Mercury prépare votre commande avant de transmettre la collecte Orange Money à la passerelle MynaPay.',
+      description: 'Mercury prépare votre commande avant de transmettre la collecte mobile money à la passerelle MynaPay.',
     },
     2: {
       eyebrow: 'Etape 2',
@@ -476,10 +483,10 @@ export default function Checkout() {
           <div className="checkout-success" style={{ display: 'block' }}>
             <div className="success-icon"><Icon name="check" size={32} /></div>
             <h3>Paiement réussi !</h3>
-            <p>Collecte MynaPay confirmée via Orange Money</p>
+            <p>Collecte MynaPay confirmée via {txn.operator === 'moov' ? 'Moov Money' : 'Orange Money'}</p>
             <p style={{ color: 'var(--success)', fontWeight: 600 }}>{gateway.simulation ? 'Simulation locale MynaPay terminée avec succès.' : 'La confirmation opérateur a été enregistrée par Mercury.'}</p>
             <div className="txn-details-card">
-              {[['ID Transaction', txn.transId], ['Montant', `${txn.amount.toLocaleString()} FCFA`], ['Numéro', txn.phone], ['Passerelle', gateway.provider], ['Opérateur', 'Orange Money'], ['Date', txn.date]].map(([l, v]) => (
+              {[['ID Transaction', txn.transId], ['Montant', `${txn.amount.toLocaleString()} FCFA`], ['Numéro', txn.phone], ['Passerelle', gateway.provider], ['Opérateur', txn.operator === 'moov' ? 'Moov Money' : 'Orange Money'], ['Date', txn.date]].map(([l, v]) => (
                 <div key={l} className="txn-row"><span className="txn-label">{l}</span><span className="txn-val">{v}</span></div>
               ))}
               <div className="txn-row"><span className="txn-label">Statut</span><span className="txn-val" style={{ color: 'var(--success)' }}><Icon name="check" size={14} /> Succès (200)</span></div>
@@ -540,7 +547,9 @@ export default function Checkout() {
     );
   }
 
-  const checkoutStepLabels = ['Coordonnées', 'Générer OTP', 'Confirmer', 'Validation'];
+  const checkoutStepLabels = selectedOperator === 'moov'
+    ? ['Coordonnées', 'Push Moov', 'Confirmation', 'Validation']
+    : ['Coordonnées', 'Générer OTP', 'Confirmer', 'Validation'];
   const itemCount = cart.reduce((sum, item) => sum + (item.quantity || 1), 0);
 
   return (
@@ -562,22 +571,25 @@ export default function Checkout() {
 
         <div className="mynapay-layout">
           <main className="mynapay-main">
-            <div className="mynapay-step-heading"><span>{stepGuidance[step]?.eyebrow}</span><h2>{stepGuidance[step]?.title}</h2><p>{stepGuidance[step]?.description}</p></div>
+            <div className="mynapay-step-heading"><span>{stepGuidance[step]?.eyebrow}</span><h2>{stepGuidance[step]?.title}</h2><p>{step === 1 ? `Choisissez Orange Money par OTP ou Moov Money par confirmation push. La collecte sera orchestrée par ${gateway.provider}.` : stepGuidance[step]?.description}</p></div>
 
             {step === 1 && <div className="mynapay-step-content">
-              <div className="mynapay-rail-card"><div className="mynapay-orange-logo">OM</div><div><span>Moyen de paiement</span><strong>Orange Money Burkina</strong><small>Collecte OTP via l’API MynaPay</small></div><Icon name="check" size={18} /></div>
+              <div className="mynapay-operator-picker" role="radiogroup" aria-label="Choisir un opérateur mobile money">
+                <button type="button" className={`mynapay-operator orange${selectedOperator === 'orange' ? ' selected' : ''}`} onClick={() => setSelectedOperator('orange')}><span>OM</span><div><small>Paiement par OTP</small><strong>Orange Money</strong><em>Code USSD puis OTP à 6 chiffres</em></div>{selectedOperator === 'orange' && <Icon name="check" size={17} />}</button>
+                <button type="button" className={`mynapay-operator moov${selectedOperator === 'moov' ? ' selected' : ''}`} onClick={() => setSelectedOperator('moov')}><span>MOOV</span><div><small>Paiement push</small><strong>Moov Money</strong><em>Confirmation avec votre PIN sur le téléphone</em></div>{selectedOperator === 'moov' && <Icon name="check" size={17} />}</button>
+              </div>
               <div className="mynapay-fields-grid">
-                <div className="form-group full"><label><Icon name="smartphone" size={14} /> Numéro Orange Money</label><input type="tel" placeholder="Ex : 70 12 34 56" maxLength="12" value={phone} onChange={e => { setPhone(e.target.value); setPhoneError(''); }} className={phoneError ? 'error' : ''} /><div className="form-hint">Numéro burkinabè à 8 chiffres</div>{phoneError && <div className="form-error visible">{phoneError}</div>}</div>
+                <div className="form-group full"><label><Icon name="smartphone" size={14} /> Numéro {selectedOperator === 'moov' ? 'Moov Money' : 'Orange Money'}</label><input type="tel" placeholder="Ex : 70 12 34 56" maxLength="12" value={phone} onChange={e => { setPhone(e.target.value); setPhoneError(''); }} className={phoneError ? 'error' : ''} /><div className="form-hint">Numéro burkinabè à 8 chiffres</div>{phoneError && <div className="form-error visible">{phoneError}</div>}</div>
                 <div className="form-group"><label><Icon name="user" size={14} /> Nom complet</label><input type="text" value={name} onChange={e => setName(e.target.value)} /></div>
                 <div className="form-group"><label><Icon name="mail" size={14} /> Email du reçu</label><input type="email" value={email} onChange={e => setEmail(e.target.value)} /></div>
               </div>
               {hasPhysical && <div className="mynapay-shipping"><h3><Icon name="mapPin" size={16} /> Livraison des livres papier</h3><div className="mynapay-fields-grid"><div className="form-group"><label>Adresse</label><input value={shipping.address} onChange={e => setShipping(p => ({ ...p, address: e.target.value }))} /></div><div className="form-group"><label>Ville</label><input value={shipping.city} onChange={e => setShipping(p => ({ ...p, city: e.target.value }))} /></div><div className="form-group full"><label>Instructions</label><textarea rows="2" value={shipping.notes} onChange={e => setShipping(p => ({ ...p, notes: e.target.value }))} /></div></div></div>}
-              <button className="mynapay-primary" onClick={goToStep2}>Continuer vers l’OTP <Icon name="arrowRight" size={16} /></button>
+              <button className={`mynapay-primary ${selectedOperator}`} onClick={goToStep2}>{selectedOperator === 'moov' ? 'Envoyer la demande sur mon téléphone' : 'Continuer vers l’OTP'} <Icon name="arrowRight" size={16} /></button>
             </div>}
 
             {step === 2 && <div className="mynapay-step-content"><button className="mynapay-back" onClick={() => goToStep(1)}><Icon name="arrowLeft" size={14} /> Modifier les coordonnées</button><div className="mynapay-ussd-card"><div className="mynapay-phone-visual"><span>*</span><Icon name="smartphone" size={34} /></div><span className="mynapay-overline">Depuis le téléphone associé au {phone}</span><h3>Composez le code Orange</h3><button type="button" className="mynapay-ussd-code" onClick={() => navigator.clipboard?.writeText(`${env.ussd_prefix}${total}${env.ussd_suffix}`)}>{env.ussd_prefix}{total}{env.ussd_suffix}<small>Cliquer pour copier</small></button><ol><li>Composez le code puis validez l’appel USSD.</li><li>Saisissez votre code PIN Orange Money.</li><li>Conservez l’OTP à 6 chiffres reçu par SMS.</li></ol><div className="mynapay-security-note"><Icon name="shield" size={16} /> Votre PIN Orange Money n’est jamais saisi sur Mercury.</div></div><button className="mynapay-primary" onClick={() => goToStep(3)}>J’ai mon code OTP <Icon name="arrowRight" size={16} /></button></div>}
 
-            {step === 3 && <div className="mynapay-step-content"><button className="mynapay-back" onClick={() => goToStep(2)}><Icon name="arrowLeft" size={14} /> Revoir le code USSD</button><div className="mynapay-otp-card"><div className="mynapay-lock"><Icon name="lock" size={24} /></div><span className="mynapay-overline">Autorisation Orange Money</span><h3>Saisissez votre OTP</h3><p>Une seule tentative métier sera envoyée à MynaPay avec la référence de votre commande.</p><div className="otp-input-group">{otp.map((digit, index) => <input key={index} ref={element => otpRefs.current[index] = element} type="text" className={`otp-digit${digit ? ' filled' : ''}`} maxLength="1" inputMode="numeric" value={digit} onChange={event => handleOtpChange(index, event.target.value)} onKeyDown={event => handleOtpKeyDown(index, event)} />)}</div>{otpError && <div className="form-error visible">{otpError}</div>}<div className="mynapay-otp-time"><Icon name="clock" size={14} /> Expire dans <strong>{otpSeconds > 0 ? `${m}:${s}` : 'Expiré'}</strong></div></div><button className="mynapay-primary" onClick={processPayment} disabled={!otpComplete}>Payer {total.toLocaleString('fr-FR')} FCFA <Icon name="arrowRight" size={16} /></button></div>}
+            {step === 3 && <div className="mynapay-step-content"><button className="mynapay-back" onClick={() => goToStep(2)}><Icon name="arrowLeft" size={14} /> Revoir le code USSD</button><div className="mynapay-otp-card"><div className="mynapay-lock"><Icon name="lock" size={24} /></div><span className="mynapay-overline">Autorisation Orange Money</span><h3>Saisissez votre OTP</h3><p>Une seule tentative métier sera envoyée à MynaPay avec la référence de votre commande.</p><div className="otp-input-group">{otp.map((digit, index) => <input key={index} ref={element => otpRefs.current[index] = element} type="text" className={`otp-digit${digit ? ' filled' : ''}`} maxLength="1" inputMode="numeric" value={digit} onChange={event => handleOtpChange(index, event.target.value)} onKeyDown={event => handleOtpKeyDown(index, event)} />)}</div>{otpError && <div className="form-error visible">{otpError}</div>}<div className="mynapay-otp-time"><Icon name="clock" size={14} /> Expire dans <strong>{otpSeconds > 0 ? `${m}:${s}` : 'Expiré'}</strong></div></div><button className="mynapay-primary" onClick={() => processPayment()} disabled={!otpComplete}>Payer {total.toLocaleString('fr-FR')} FCFA <Icon name="arrowRight" size={16} /></button></div>}
 
             {step === 4 && !result && <div className="mynapay-step-content"><div className="mynapay-processing"><div className="processing-anim"><div className="processing-ring" /><div className="processing-icon"><Icon name="shield" size={32} /></div></div><span className="mynapay-overline">Collecte en cours</span><h3>MynaPay vérifie la transaction</h3><p>La commande reste en attente tant que l’opérateur n’a pas confirmé le paiement.</p><div className="processing-log">{logs.map((line, index) => <div key={index} className="log-line">{line.type === 'ok' ? <span className="log-ok"><Icon name="check" size={12} /></span> : line.type === 'warn' ? <span className="log-warn"><Icon name="warning" size={12} /></span> : <Icon name="arrowRight" size={12} />} {line.text}</div>)}</div></div></div>}
           </main>
@@ -587,7 +599,7 @@ export default function Checkout() {
             <div className="mynapay-summary-title"><span>Votre commande</span><small>{itemCount} article{itemCount > 1 ? 's' : ''}</small></div>
             <div className="mynapay-items">{cart.map(item => <div className="mynapay-item" key={`${item.id}-${item.format}`}><div>{item.cover_image ? <img src={item.cover_image} alt="" /> : <span>{item.title.charAt(0)}</span>}</div><section><strong>{item.title}</strong><small>{item.format === 'physical' ? 'Livre papier' : 'Ebook'} · ×{item.quantity || 1}</small></section><b>{(item.finalPrice * (item.quantity || 1)).toLocaleString('fr-FR')} F</b></div>)}</div>
             <div className="mynapay-totals"><div><span>Sous-total</span><b>{cartTotal.toLocaleString('fr-FR')} F</b></div><div><span>Frais mobile money</span><b>{fees.toLocaleString('fr-FR')} F</b></div><div className="total"><span>Total</span><b>{total.toLocaleString('fr-FR')} <small>FCFA</small></b></div></div>
-            <div className="mynapay-route"><div><span>Mercury</span><Icon name="arrowRight" size={12} /><span>MynaPay</span><Icon name="arrowRight" size={12} /><span>Orange</span></div><p><Icon name="shield" size={13} /> API backend, idempotence et contrôle du statut</p></div>
+            <div className="mynapay-route"><div><span>Mercury</span><Icon name="arrowRight" size={12} /><span>MynaPay</span><Icon name="arrowRight" size={12} /><span>{selectedOperator === 'moov' ? 'Moov' : 'Orange'}</span></div><p><Icon name="shield" size={13} /> API backend, idempotence et contrôle du statut</p></div>
             <button className="mynapay-cancel" onClick={handleClose}>Annuler le paiement</button>
           </aside>
         </div>
