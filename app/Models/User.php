@@ -12,7 +12,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
-#[Fillable(['name', 'email', 'phone', 'password', 'is_admin', 'cart_data'])]
+#[Fillable(['name', 'email', 'phone', 'password', 'is_admin', 'cart_data', 'reader_alias', 'reader_bio', 'reading_interests', 'community_profile_visible'])]
 #[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable implements MustVerifyEmailContract
 {
@@ -26,6 +26,8 @@ class User extends Authenticatable implements MustVerifyEmailContract
             'password' => 'hashed',
             'is_admin' => 'boolean',
             'cart_data' => 'array',
+            'reading_interests' => 'array',
+            'community_profile_visible' => 'boolean',
         ];
     }
 
@@ -42,6 +44,16 @@ class User extends Authenticatable implements MustVerifyEmailContract
     public function reviews(): \Illuminate\Database\Eloquent\Relations\HasMany
     {
         return $this->hasMany(BookReview::class);
+    }
+
+    public function readingGroupMemberships(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(ReadingGroupMember::class);
+    }
+
+    public function ownedReadingGroups(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(ReadingGroup::class, 'owner_id');
     }
 
     // ============ SCOPES ============

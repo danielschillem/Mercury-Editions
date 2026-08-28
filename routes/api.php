@@ -6,6 +6,7 @@ use App\Http\Controllers\BookReaderController;
 use App\Http\Controllers\BookReviewController;
 use App\Http\Controllers\ContactController;
 use App\Http\Controllers\ReadingProgressController;
+use App\Http\Controllers\ReaderCommunityController;
 use App\Http\Controllers\CustomerAuthController;
 use App\Http\Controllers\EditorialCollectionController;
 use App\Http\Controllers\ManuscriptSubmissionController;
@@ -80,6 +81,17 @@ Route::middleware('auth')->prefix('customer')->group(function () {
     Route::get('/reading-progress/last', [ReadingProgressController::class, 'lastReading']);
     Route::get('/books/{book}/progress', [ReadingProgressController::class, 'show']);
     Route::post('/books/{book}/progress', [ReadingProgressController::class, 'update']);
+
+    // Communauté de lecteurs
+    Route::get('/community', [ReaderCommunityController::class, 'index']);
+    Route::put('/community/profile', [ReaderCommunityController::class, 'updateProfile']);
+    Route::post('/community/groups', [ReaderCommunityController::class, 'storeGroup'])->middleware('throttle:10,1');
+    Route::get('/community/groups/{readingGroup:slug}', [ReaderCommunityController::class, 'show']);
+    Route::put('/community/groups/{readingGroup:slug}', [ReaderCommunityController::class, 'updateGroup']);
+    Route::post('/community/groups/{readingGroup:slug}/join', [ReaderCommunityController::class, 'join']);
+    Route::delete('/community/groups/{readingGroup:slug}/leave', [ReaderCommunityController::class, 'leave']);
+    Route::patch('/community/groups/{readingGroup:slug}/members/{member}', [ReaderCommunityController::class, 'moderateMember']);
+    Route::post('/community/groups/{readingGroup:slug}/posts', [ReaderCommunityController::class, 'storePost'])->middleware('throttle:20,1');
 });
 
 // ── Admin API ──

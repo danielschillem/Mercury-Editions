@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { useApp } from '../context/AppContext';
 import { useToast } from '../context/ToastContext';
 import Icon from './Icons';
+import ReaderCommunity from './ReaderCommunity';
 
 const statusLabels = {
   pending: 'En attente',
@@ -513,6 +514,9 @@ export default function AccountPage({ onClose, initialTab = 'overview' }) {
             <button className={`account-tab${tab === 'library' ? ' active' : ''}`} onClick={() => setTab('library')}>
               <Icon name="library" size={14} /> Ma bibliothèque
             </button>
+            <button className={`account-tab${tab === 'community' ? ' active' : ''}`} onClick={() => setTab('community')}>
+              <Icon name="users" size={14} /> Communauté
+            </button>
             <button className={`account-tab${tab === 'profile' ? ' active' : ''}`} onClick={() => setTab('profile')}>
               <Icon name="user" size={14} /> Mon profil
             </button>
@@ -826,6 +830,17 @@ export default function AccountPage({ onClose, initialTab = 'overview' }) {
                       </div>
                     </aside>
                   </div>
+                </div>
+              )}
+
+              {tab === 'community' && (
+                <div className="account-tab-content">
+                  <ReaderCommunity
+                    books={books}
+                    toast={toast}
+                    purchasedBookIds={libraryItems.filter((item) => item.format === 'ebook').map((item) => item.bookId)}
+                    onOpenReader={openReader}
+                  />
                 </div>
               )}
             </>
