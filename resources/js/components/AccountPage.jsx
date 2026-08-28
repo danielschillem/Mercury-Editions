@@ -401,9 +401,9 @@ export default function AccountPage({ onClose, initialTab = 'overview' }) {
             <div className="account-hero-main">
               <div className="account-avatar account-avatar-lg">{user?.name?.charAt(0)?.toUpperCase() || 'U'}</div>
               <div className="account-hero-copy">
-                <span className="account-kicker">Espace client Mercury</span>
-                <h2>{user?.name}</h2>
-                <p>Retrouvez vos commandes, votre bibliothèque numérique et votre lecteur eBook depuis un seul espace.</p>
+                <span className="account-kicker">Mon espace Mercury</span>
+                <h2>Bonjour, {user?.name?.split(' ')[0] || 'lecteur'}</h2>
+                <p>Vos livres, vos lectures et votre communauté réunis dans un espace personnel.</p>
                 <div className="account-identity-row">
                   <span><Icon name="mail" size={14} /> {user?.email}</span>
                   {user?.phone && <span><Icon name="smartphone" size={14} /> {user.phone}</span>}
@@ -445,6 +445,7 @@ export default function AccountPage({ onClose, initialTab = 'overview' }) {
             </div>
           )}
 
+          {tab === 'overview' && <>
           <section className="account-stats account-stats-premium">
             <div className="account-stat">
               <div className="account-stat-icon"><Icon name="bookOpen" size={18} /></div>
@@ -503,6 +504,7 @@ export default function AccountPage({ onClose, initialTab = 'overview' }) {
               </button>
             </article>
           </section>
+          </>}
 
           <div className="account-tabs account-tabs-premium">
             <button className={`account-tab${tab === 'overview' ? ' active' : ''}`} onClick={() => setTab('overview')}>

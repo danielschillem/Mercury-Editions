@@ -659,14 +659,18 @@ export default function Reader({ bookId, onClose, returnTo = 'library' }) {
   const renderFallback = () => (
     <div className="reader-surface reader-surface-alt">
       <div className="reader-fallback">
-        <div className="reader-fallback-intro">
-          <span className="reader-panel-kicker">Fichier non disponible</span>
-          <h2>{book.title}</h2>
-          <p>Votre achat est bien reconnu, mais aucun fichier PDF ou EPUB exploitable n'est encore associé à ce livre.</p>
+        <div className="reader-fallback-lead">
+          <div className="reader-fallback-cover">{book.cover_image ? <img src={book.cover_image} alt={book.title} /> : <span>{book.title.charAt(0)}</span>}</div>
+          <div className="reader-fallback-intro">
+            <span className="reader-panel-kicker">Aperçu de votre ouvrage</span>
+            <h2>{book.title}</h2>
+            <p>{book.author_name}</p>
+            <span className="reader-file-status"><Icon name="clock" size={13} /> Fichier de lecture en préparation</span>
+          </div>
         </div>
         <div className="reader-notice">
           <Icon name="warning" size={16} />
-          <span>L'admin peut encore ajouter le fichier eBook sans impacter votre licence d'accès.</span>
+          <span>Votre achat et votre licence sont actifs. Le PDF ou l’EPUB apparaîtra automatiquement dès sa mise à disposition par Mercury.</span>
         </div>
         <article className="reader-excerpt">
           <h3>Extrait disponible</h3>
@@ -833,8 +837,8 @@ export default function Reader({ bookId, onClose, returnTo = 'library' }) {
       <div className="reader-topbar">
         <div className="reader-topbar-left">
           <div className="reader-logo">
-            <div className="reader-logo-icon">M</div>
-            <span className="reader-logo-text">Mercury Reader</span>
+            <div className="reader-logo-icon"><img src="/images/logo/logo.png" alt="" /></div>
+            <span className="reader-logo-text">Bibliothèque Mercury</span>
           </div>
           <div className="reader-book-info">
             <h4>{book.title}</h4>
