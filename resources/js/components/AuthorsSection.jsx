@@ -37,7 +37,7 @@ export default function AuthorsSection() {
 }
 
 export function AuthorProfile({ authorId, onClose }) {
-  const { books, authors, openModal, closeModal } = useApp();
+  const { books, authors, openModal } = useApp();
 
   const a = authors.find(x => x.id === authorId);
   if (!a) return null;
@@ -50,40 +50,63 @@ export function AuthorProfile({ authorId, onClose }) {
       <div className="author-profile-modal">
         <div className="ap-hero" style={{ background: `linear-gradient(135deg, ${a.color}, ${a.color}DD)` }}>
           <button className="ap-close" onClick={onClose}><Icon name="close" size={20} /></button>
-          <div className="ap-avatar"><Icon name={a.icon} size={48} /></div>
+          <div className="ap-portrait-wrap">
+            <div className="ap-portrait-number">AUTEUR · {String(a.id).padStart(2, '0')}</div>
+            <div className="ap-avatar"><Icon name={a.icon} size={54} /></div>
+          </div>
           <div className="ap-info">
+            <div className="ap-eyebrow"><Icon name="pen" size={14} /> Voix Mercury</div>
             <h1 className="ap-name">{a.name}</h1>
             <div className="ap-origin">{a.origin} · {lifespan}</div>
             <div className="ap-genre-tags">
               {a.genres.map(g => <span key={g} className="ap-genre-tag">{g}</span>)}
             </div>
             <div className="ap-stats-row">
-              <div><div className="ap-stat-val">{authorBooks.length}</div><div className="ap-stat-label">Ouvrages</div></div>
-              <div><div className="ap-stat-val">{a.awards.length}</div><div className="ap-stat-label">Distinctions</div></div>
-              <div><div className="ap-stat-val">{a.timeline.length}</div><div className="ap-stat-label">Étapes clés</div></div>
+              <div><div className="ap-stat-val">{authorBooks.length}</div><div className="ap-stat-label">Ouvrage{authorBooks.length !== 1 ? 's' : ''}</div></div>
+              <div><div className="ap-stat-val">{a.awards.length}</div><div className="ap-stat-label">Distinction{a.awards.length !== 1 ? 's' : ''}</div></div>
+              <div><div className="ap-stat-val">{a.timeline.length}</div><div className="ap-stat-label">Repère{a.timeline.length !== 1 ? 's' : ''}</div></div>
             </div>
           </div>
         </div>
         <div className="ap-body">
-          <h3 className="ap-section-title"> Biographie</h3>
-          <div className="ap-bio" dangerouslySetInnerHTML={{ __html: a.bio }} />
-          <h3 className="ap-section-title"> Distinctions & Prix</h3>
-          <div className="ap-awards">
-            {a.awards.map((aw, i) => <div key={i} className="ap-award">{aw}</div>)}
-          </div>
-          <h3 className="ap-section-title"> Parcours</h3>
-          <div className="ap-timeline">
-            {a.timeline.map((t, i) => (
-              <div key={i} className="ap-timeline-item">
-                <div className="ap-timeline-year">{t.year}</div>
-                <div className="ap-timeline-text">{t.text}</div>
+          <div className="ap-content-grid">
+            <main className="ap-main-copy">
+              <div className="ap-section-kicker">Portrait</div>
+              <h3 className="ap-section-title">Biographie</h3>
+              <div className="ap-bio" dangerouslySetInnerHTML={{ __html: a.bio }} />
+              <div className="ap-section-kicker">Chronologie</div>
+              <h3 className="ap-section-title">Parcours</h3>
+              {a.timeline.length > 0 ? (
+                <div className="ap-timeline">
+                  {a.timeline.map((t, i) => (
+                    <div key={i} className="ap-timeline-item">
+                      <div className="ap-timeline-year">{t.year}</div>
+                      <div className="ap-timeline-text">{t.text}</div>
+                    </div>
+                  ))}
+                </div>
+              ) : <p className="ap-empty">Le parcours détaillé de cet auteur sera bientôt enrichi.</p>}
+            </main>
+            <aside className="ap-aside">
+              <div className="ap-aside-card">
+                <span className="ap-aside-icon"><Icon name="award" size={19} /></span>
+                <div className="ap-section-kicker">Reconnaissance</div>
+                <h3>Distinctions & prix</h3>
+                {a.awards.length > 0 ? (
+                  <div className="ap-awards">{a.awards.map((aw, i) => <div key={i} className="ap-award"><Icon name="check" size={13} /> {aw}</div>)}</div>
+                ) : <p className="ap-empty">Aucune distinction renseignée à ce jour.</p>}
               </div>
-            ))}
+              <div className="ap-aside-card ap-signature-card">
+                <span>Univers littéraire</span>
+                <strong>{a.genres.join(' · ')}</strong>
+                <small>Publié et accompagné par Mercury Éditions</small>
+              </div>
+            </aside>
           </div>
         </div>
         {authorBooks.length > 0 && (
           <div className="ap-bibliography">
-            <h3 className="ap-section-title"> Bibliographie disponible</h3>
+            <div className="ap-biblio-heading"><div><div className="ap-section-kicker">À lire</div><h3 className="ap-section-title">Bibliographie disponible</h3></div><span>{authorBooks.length} titre{authorBooks.length !== 1 ? 's' : ''}</span></div>
             <div className="ap-biblio-grid">
               {authorBooks.map(b => (
                 <div key={b.id} className="ap-book-card" onClick={() => { onClose(); setTimeout(() => openModal('bookDetail', b.id), 300); }}>
@@ -97,9 +120,11 @@ export function AuthorProfile({ authorId, onClose }) {
                     )}
                   </div>
                   <div className="ap-book-info">
+                    <div className="ap-book-category">{b.category || 'Ouvrage Mercury'}</div>
                     <div className="ap-book-title">{b.title}</div>
                     <div className="ap-book-year">{b.year} · {b.pages} pages</div>
                     <div className="ap-book-price">{b.price.toLocaleString()} FCFA</div>
+                    <span className="ap-book-action">Voir l’œuvre <Icon name="arrowRight" size={13} /></span>
                   </div>
                 </div>
               ))}
