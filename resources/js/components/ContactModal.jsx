@@ -39,32 +39,34 @@ export default function ContactModal({ onClose }) {
             <div className="contact-modal" onClick={(e) => e.stopPropagation()}>
                 <button className="modal-close" onClick={onClose} aria-label="Fermer"><Icon name="close" size={18} /></button>
                 <div className="contact-modal-header">
-                    <Icon name="messageCircle" size={24} />
+                    <span className="form-header-icon"><Icon name="messageCircle" size={22} /></span>
+                    <div className="form-eyebrow">Équipe Mercury</div>
                     <h2>Nous contacter</h2>
-                    <p>Une question ? Un problème ? Écrivez-nous.</p>
+                    <p>Parlez-nous de votre demande. Notre équipe vous répondra avec un suivi clair et personnalisé.</p>
                 </div>
                 <form className="contact-form" onSubmit={handleSubmit}>
                     <div className="contact-form-row">
                         <div className="contact-field">
-                            <label>Nom</label>
+                        <label><Icon name="user" size={14} /> Nom complet</label>
                             <input type="text" value={form.name} onChange={(e) => set('name', e.target.value)} placeholder="Votre nom" required />
                         </div>
                         <div className="contact-field">
-                            <label>Email</label>
+                        <label><Icon name="mail" size={14} /> Adresse email</label>
                             <input type="email" value={form.email} onChange={(e) => set('email', e.target.value)} placeholder="votre@email.com" required />
                         </div>
                     </div>
                     <div className="contact-field">
-                        <label>Sujet</label>
+                        <label><Icon name="tag" size={14} /> Sujet</label>
                         <input type="text" value={form.subject} onChange={(e) => set('subject', e.target.value)} placeholder="Objet de votre message" required />
                     </div>
                     <div className="contact-field">
-                        <label>Message</label>
+                        <label><Icon name="messageCircle" size={14} /> Votre message</label>
                         <textarea rows={5} value={form.message} onChange={(e) => set('message', e.target.value)} placeholder="Décrivez votre demande en détail..." required />
                     </div>
                     <button type="submit" className="btn btn-primary" disabled={loading} style={{ width: '100%' }}>
                         {loading ? 'Envoi en cours...' : <><Icon name="send" size={16} /> Envoyer le message</>}
                     </button>
+                    <p className="form-privacy"><Icon name="shield" size={14} /> Vos coordonnées sont uniquement utilisées pour répondre à cette demande.</p>
                 </form>
             </div>
         </div>

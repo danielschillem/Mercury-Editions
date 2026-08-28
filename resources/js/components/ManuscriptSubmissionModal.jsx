@@ -85,30 +85,32 @@ export default function ManuscriptSubmissionModal({ onClose }) {
       <div className="contact-modal manuscript-modal" onClick={(event) => event.stopPropagation()}>
         <button className="modal-close" onClick={onClose} aria-label="Fermer"><Icon name="close" size={18} /></button>
         <div className="contact-modal-header">
-          <Icon name="scroll" size={24} />
+          <span className="form-header-icon"><Icon name="scroll" size={22} /></span>
+          <div className="form-eyebrow">Comité éditorial</div>
           <h2>Soumettre un manuscrit</h2>
-          <p>Présentez votre projet à l’équipe éditoriale Mercury.</p>
+          <p>Présentez votre projet à l’équipe Mercury. Les champs marqués comme essentiels nous permettent d’effectuer une première lecture.</p>
+          <div className="submission-steps"><span className="active">01 · Auteur</span><span>02 · Projet</span><span>03 · Manuscrit</span></div>
         </div>
 
         <form className="contact-form" onSubmit={handleSubmit}>
           <div className="contact-form-row">
             <div className="contact-field">
-              <label>Nom de l'auteur</label>
+              <label><Icon name="user" size={14} /> Nom de l'auteur</label>
               <input type="text" value={form.author_name} onChange={(e) => set('author_name', e.target.value)} placeholder="Votre nom complet" required />
             </div>
             <div className="contact-field">
-              <label>Email</label>
+              <label><Icon name="mail" size={14} /> Email</label>
               <input type="email" value={form.email} onChange={(e) => set('email', e.target.value)} placeholder="votre@email.com" required />
             </div>
           </div>
 
           <div className="contact-form-row">
             <div className="contact-field">
-              <label>Téléphone</label>
+              <label><Icon name="smartphone" size={14} /> Téléphone</label>
               <input type="tel" value={form.phone} onChange={(e) => set('phone', e.target.value)} placeholder="+226 70 00 00 00" />
             </div>
             <div className="contact-field">
-              <label>Titre du manuscrit</label>
+              <label><Icon name="bookOpen" size={14} /> Titre du manuscrit</label>
               <input type="text" value={form.title} onChange={(e) => set('title', e.target.value)} placeholder="Titre provisoire ou définitif" required />
             </div>
           </div>
@@ -150,8 +152,9 @@ export default function ManuscriptSubmissionModal({ onClose }) {
           </div>
 
           <button type="submit" className="btn btn-primary" disabled={loading} style={{ width: '100%' }}>
-            {loading ? 'Envoi en cours...' : <><Icon name="send" size={16} /> Envoyer le manuscrit</>}
+            {loading ? 'Envoi en cours...' : <><Icon name="send" size={16} /> Confier mon manuscrit à Mercury</>}
           </button>
+          <p className="form-privacy"><Icon name="shield" size={14} /> Votre texte reste confidentiel et n’est jamais diffusé sans votre accord.</p>
         </form>
       </div>
     </div>

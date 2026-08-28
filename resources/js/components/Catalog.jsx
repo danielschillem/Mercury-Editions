@@ -428,6 +428,7 @@ export function BookDetail({ bookId, onClose }) {
             </div>
           </div>
           <div className="detail-info">
+            <div className="detail-eyebrow">Fiche de l’œuvre</div>
             {book.local && <div className="detail-local-badge"><FlagBF size={14} /> Auteur burkinabè</div>}
             <h1 className="detail-title">{book.title}</h1>
             <div className="detail-author">par <strong>{book.author_name}</strong></div>
@@ -447,13 +448,14 @@ export function BookDetail({ bookId, onClose }) {
               </div>
             )}
             <div className="detail-actions">
-              <div className="format-selector" style={{ marginBottom: '0.75rem', width: '100%', display: 'flex', gap: '0.5rem' }}>
+              <div className="detail-purchase-label">Choisissez votre édition</div>
+              <div className="format-selector">
                 <button className="format-opt" onClick={() => setFormat('ebook')}
-                  style={{ flex: 1, padding: '10px', borderRadius: '10px', border: `2px solid ${format === 'ebook' ? 'rgba(255,255,255,0.3)' : 'rgba(255,255,255,0.15)'}`, background: format === 'ebook' ? 'rgba(255,255,255,0.15)' : 'transparent', color: format === 'ebook' ? 'white' : 'rgba(255,255,255,0.6)', cursor: 'pointer', fontWeight: 700, fontSize: '0.8rem', fontFamily: "'Source Sans 3',sans-serif", transition: 'all 0.3s' }}>
+                  data-active={format === 'ebook'}>
                   <Icon name="smartphone" size={14} /> eBook — {book.price.toLocaleString()} F
                 </button>
                 <button className="format-opt" onClick={() => setFormat('physical')}
-                  style={{ flex: 1, padding: '10px', borderRadius: '10px', border: `2px solid ${format === 'physical' ? 'rgba(255,255,255,0.3)' : 'rgba(255,255,255,0.15)'}`, background: format === 'physical' ? 'rgba(255,255,255,0.15)' : 'transparent', color: format === 'physical' ? 'white' : 'rgba(255,255,255,0.6)', cursor: 'pointer', fontWeight: 700, fontSize: '0.8rem', fontFamily: "'Source Sans 3',sans-serif", transition: 'all 0.3s' }}>
+                  data-active={format === 'physical'}>
                   <Icon name="package" size={14} /> Papier — {Math.round(book.price * 1.6).toLocaleString()} F
                 </button>
               </div>
