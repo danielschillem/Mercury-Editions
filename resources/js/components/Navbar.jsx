@@ -77,7 +77,6 @@ export default function Navbar() {
           <li><a href="#maison" onClick={(e) => { e.preventDefault(); scrollToSection('maison'); }}>Maison</a></li>
           <li><a href="#vedette" onClick={(e) => { e.preventDefault(); scrollToSection('vedette'); }}>En vedette</a></li>
           <li><a href="#parutions" onClick={(e) => { e.preventDefault(); scrollToSection('parutions'); }}>Parutions</a></li>
-          <li><a href="#auteurs" onClick={(e) => { e.preventDefault(); scrollToSection('auteurs'); }}>Auteurs</a></li>
           <li><a href="#catalogue" onClick={(e) => { e.preventDefault(); scrollToSection('catalogue'); }}>Catalogue</a></li>
           <li><a href="#paiement" onClick={(e) => { e.preventDefault(); scrollToSection('paiement'); }}>Paiement</a></li>
           <li><a href="#" onClick={e => { e.preventDefault(); openModal(user ? 'account' : 'auth', user ? 'library' : null); }} style={{ color: 'var(--gold)' }}>Mes achats</a></li>

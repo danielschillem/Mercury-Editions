@@ -1,108 +1,92 @@
 import { useApp } from '../context/AppContext';
-import Icon, { StarRating, FlagBF } from './Icons';
+import Icon, { FlagBF } from './Icons';
+
+function Cover({ book, className }) {
+  if (book.cover_image) {
+    return <img src={book.cover_image} alt={`Couverture de ${book.title}`} className={className} onError={(event) => { event.currentTarget.onerror = null; event.currentTarget.src = '/images/covers/placeholder.svg'; }} />;
+  }
+
+  return (
+    <div className={`${className} spotlight-cover-fallback`} style={{ background: `linear-gradient(145deg, ${book.color}, #2b1715)` }}>
+      <strong>{book.title}</strong><span>{book.author_name}</span>
+    </div>
+  );
+}
 
 export default function FeaturedSection() {
-  const { books, authors, openModal } = useApp();
-
-  // Sélection éditoriale explicite, avec repli sur les mieux notés pour les
-  // anciennes bases qui ne disposent pas encore du marqueur is_featured.
-  const curatedBooks = books.filter(book => book.is_featured);
+  const { books, openModal } = useApp();
+  const curatedBooks = books.filter((book) => book.is_featured);
   const featuredBooks = (curatedBooks.length > 0 ? curatedBooks : books)
     .slice()
     .sort((a, b) => Number(b.rating) - Number(a.rating) || Number(b.year) - Number(a.year))
     .slice(0, 3);
-  // Top 3 authors by number of books
-  const featuredAuthors = [...authors]
-    .map(a => ({ ...a, bookCount: books.filter(b => b.author_id === a.id).length }))
-    .sort((a, b) => b.bookCount - a.bookCount)
-    .slice(0, 3);
+
+  if (featuredBooks.length === 0) return null;
+
+  const [leadBook, ...secondaryBooks] = featuredBooks;
+  const showBook = (book) => openModal('bookDetail', book.id);
 
   return (
-    <section className="featured-section" id="vedette">
-      <div className="inner">
-        <div className="section-header">
-          <div className="section-tag">En vedette</div>
-          <h2 className="section-title">Livres &amp; auteurs <em>à découvrir</em></h2>
-          <p className="section-subtitle">Notre sélection des œuvres et plumes incontournables de la littérature burkinabè.</p>
-        </div>
+    <section className="featured-section spotlight-section" id="vedette">
+      <div className="inner spotlight-inner">
+        <header className="spotlight-heading">
+          <div>
+            <div className="spotlight-kicker"><span /> La sélection Mercury</div>
+            <h2>Trois livres qui font <em>bouger les lignes</em></h2>
+          </div>
+          <p>Des voix fortes, des idées qui restent et des récits à transmettre. Découvrez les choix de notre comité éditorial.</p>
+        </header>
 
-        {/* ── Featured Books ── */}
-        <h3 className="featured-subtitle"><Icon name="star" size={18} /> Livres en vedette</h3>
-        <div className="featured-books-grid">
-          {featuredBooks.map((book, i) => (
-            <div
-              key={book.id}
-              className={`featured-book-card${i === 0 ? ' featured-book-main' : ''}`}
-              onClick={() => openModal('bookDetail', book.id)}
-              style={{ '--accent': book.color }}
-            >
-              <div className="fb-rank">#{i + 1}</div>
-              {book.cover_image ? (
-                <img src={book.cover_image} alt={book.title} className="fb-cover-img" onError={(e) => { e.target.onerror = null; e.target.src = '/images/covers/placeholder.svg'; }} />
-              ) : (
-                <div className="fb-cover" style={{ background: `linear-gradient(135deg, ${book.color}, ${book.color}CC)` }}>
-                  <div className="fb-cover-title">{book.title}</div>
-                  <div className="fb-cover-author">{book.author_name}</div>
-                </div>
-              )}
-              <div className="fb-info">
-                {book.local && <div className="fb-local"><FlagBF size={12} /> Auteur burkinabè</div>}
-                <div className="fb-title">{book.title}</div>
-                <div className="fb-author">{book.author_name}</div>
-                <div className="fb-rating"><StarRating rating={book.rating} /> <span>{book.rating}</span></div>
-                <p className="fb-desc">{book.description.substring(0, 120)}…</p>
-                <div className="fb-footer">
-                  <span className="fb-price">{book.price.toLocaleString()} <small>FCFA</small></span>
-                  <span className="fb-year">{book.year}</span>
-                </div>
+        <div className="spotlight-layout">
+          <article className="spotlight-lead" onClick={() => showBook(leadBook)} style={{ '--book-accent': leadBook.color }}>
+            <div className="spotlight-lead-art">
+              <span className="spotlight-number">01</span>
+              <div className="spotlight-halo" />
+              <Cover book={leadBook} className="spotlight-lead-cover" />
+            </div>
+            <div className="spotlight-lead-copy">
+              <div className="spotlight-meta">
+                {leadBook.local && <span><FlagBF size={12} /> Voix du Burkina</span>}
+                <span>{leadBook.category}</span>
+                <span>{leadBook.year}</span>
+              </div>
+              <h3>{leadBook.title}</h3>
+              <p className="spotlight-author">par {leadBook.author_name}</p>
+              <p className="spotlight-description">{leadBook.description}</p>
+              <div className="spotlight-lead-footer">
+                <div><strong>{leadBook.price.toLocaleString('fr-FR')}</strong><small> FCFA</small></div>
+                <button type="button">Découvrir l’œuvre <Icon name="arrowRight" size={15} /></button>
               </div>
             </div>
-          ))}
+          </article>
+
+          <div className="spotlight-secondary">
+            <div className="spotlight-secondary-label"><Icon name="sparkles" size={15} /> À lire ensuite</div>
+            {secondaryBooks.map((book, index) => (
+              <article className="spotlight-mini" key={book.id} onClick={() => showBook(book)} style={{ '--book-accent': book.color }}>
+                <div className="spotlight-mini-art">
+                  <span className="spotlight-mini-number">0{index + 2}</span>
+                  <Cover book={book} className="spotlight-mini-cover" />
+                </div>
+                <div className="spotlight-mini-copy">
+                  <span className="spotlight-mini-category">{book.category} · {book.year}</span>
+                  <h3>{book.title}</h3>
+                  <p>{book.author_name}</p>
+                  <footer>
+                    <strong>{book.price.toLocaleString('fr-FR')} <small>FCFA</small></strong>
+                    <span aria-hidden="true"><Icon name="arrowRight" size={15} /></span>
+                  </footer>
+                </div>
+              </article>
+            ))}
+          </div>
         </div>
 
-        {/* ── Featured Authors ── */}
-        <h3 className="featured-subtitle" style={{ marginTop: '4rem' }}><Icon name="pen" size={18} /> Auteurs en vedette</h3>
-        <div className="featured-authors-grid">
-          {featuredAuthors.map(author => {
-            const authorBooks = books.filter(b => b.author_id === author.id);
-            return (
-              <div
-                key={author.id}
-                className="featured-author-card"
-                onClick={() => openModal('authorProfile', author.id)}
-                style={{ '--accent': author.color }}
-              >
-                <div className="fa-header" style={{ background: `linear-gradient(135deg, ${author.color}, ${author.color}DD)` }}>
-                  <div className="fa-avatar"><Icon name={author.icon} size={36} /></div>
-                  <div className="fa-badge">{authorBooks.length} ouvrage{authorBooks.length > 1 ? 's' : ''}</div>
-                </div>
-                <div className="fa-body">
-                  <div className="fa-name">{author.name}</div>
-                  <div className="fa-origin">{author.origin}</div>
-                  <div className="fa-genres">
-                    {author.genres.slice(0, 2).map(g => <span key={g} className="fa-genre-tag">{g}</span>)}
-                  </div>
-                  <p className="fa-bio">{author.bio.replace(/<[^>]*>/g, '').substring(0, 100)}…</p>
-                  <div className="fa-awards">
-                    {author.awards.slice(0, 2).map((aw, i) => (
-                      <div key={i} className="fa-award"><Icon name="trophy" size={12} /> {aw}</div>
-                    ))}
-                  </div>
-                  <div className="fa-books-preview">
-                    {authorBooks.slice(0, 2).map(b =>
-                      b.cover_image ? (
-                        <img key={b.id} src={b.cover_image} alt={b.title} className="fa-mini-book-img" />
-                      ) : (
-                        <div key={b.id} className="fa-mini-book" style={{ background: `linear-gradient(135deg, ${b.color}, ${b.color}CC)` }}>
-                          {b.title.length > 18 ? b.title.substring(0, 18) + '…' : b.title}
-                        </div>
-                      )
-                    )}
-                  </div>
-                </div>
-              </div>
-            );
-          })}
+        <div className="spotlight-bottomline">
+          <span>Romans</span><i /> <span>Essais</span><i /> <span>Poésie</span>
+          <button type="button" onClick={() => document.getElementById('catalogue')?.scrollIntoView({ behavior: 'smooth' })}>
+            Explorer les {books.length} œuvres <Icon name="arrowRight" size={14} />
+          </button>
         </div>
       </div>
     </section>
