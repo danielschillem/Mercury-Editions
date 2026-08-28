@@ -23,6 +23,23 @@ class MynaPayGatewayTest extends TestCase
         ]);
     }
 
+    public function test_public_payment_configuration_exposes_flow_without_secrets(): void
+    {
+        config(['mynapay.environment' => 'sandbox', 'mynapay.simulate' => true]);
+
+        $this->getJson('/api/payments/config')
+            ->assertOk()
+            ->assertExactJson([
+                'provider' => 'MynaPay',
+                'environment' => 'sandbox',
+                'simulation' => true,
+                'operator' => 'orange',
+                'flow' => 'collection_otp',
+                'status_check' => true,
+            ])
+            ->assertJsonMissing(['api_key' => 'secret-partner-key']);
+    }
+
     public function test_orange_collection_is_sent_to_mynapay_with_backend_credentials_and_idempotency(): void
     {
         Http::fake([

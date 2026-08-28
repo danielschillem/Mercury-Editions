@@ -18,6 +18,18 @@ class PaymentController extends Controller
 
     public function __construct(private readonly MynaPayGateway $gateway) {}
 
+    public function configuration(): JsonResponse
+    {
+        return response()->json([
+            'provider' => 'MynaPay',
+            'environment' => (string) config('mynapay.environment', 'sandbox'),
+            'simulation' => (bool) config('mynapay.simulate', false),
+            'operator' => 'orange',
+            'flow' => 'collection_otp',
+            'status_check' => true,
+        ]);
+    }
+
     public function processOrangeMoney(Request $request): JsonResponse
     {
         $request->merge(['phone' => $this->normalizePhone($request->input('phone'))]);

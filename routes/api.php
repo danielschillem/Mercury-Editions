@@ -39,6 +39,7 @@ Route::middleware('auth')->group(function () {
 });
 
 // Paiement Orange Money
+Route::get('/payments/config', [PaymentController::class, 'configuration']);
 Route::post('/payments/orange', [PaymentController::class, 'processOrangeMoney'])->middleware('throttle:10,1');
 Route::post('/payments/orange/{collectionId}/check', [PaymentController::class, 'checkOrangeMoney'])
     ->whereUuid('collectionId')->middleware('throttle:20,1');

@@ -6,9 +6,8 @@ import Icon from './Icons';
 
 const OM_CONFIG = {
   paymentEndpoint: '/api/payments/orange',
-  prod: { url: 'https://apiom.orange.bf/', ussd_prefix: '*144*4*6*', ussd_suffix: '#' },
-  test: { url: 'https://testom.orange.bf/', ussd_prefix: '*865*4*6*', ussd_suffix: '#' },
-  env: 'prod'
+  production: { ussd_prefix: '*144*4*6*', ussd_suffix: '#' },
+  sandbox: { ussd_prefix: '*865*4*6*', ussd_suffix: '#' },
 };
 
 const OM_ERRORS = {
@@ -50,6 +49,7 @@ export default function Checkout() {
   const [logs, setLogs] = useState([]);
   const [result, setResult] = useState(null);
   const [shipping, setShipping] = useState({ address: '', city: '', notes: '' });
+  const [gateway, setGateway] = useState({ provider: 'MynaPay', environment: 'sandbox', simulation: false, operator: 'orange', flow: 'collection_otp', status_check: true });
   const otpRefs = useRef([]);
   const timerRef = useRef(null);
 
@@ -69,6 +69,13 @@ export default function Checkout() {
     setName(prev => prev || user.name || '');
     setEmail(prev => prev || user.email || '');
   }, [user]);
+
+  useEffect(() => {
+    fetch('/api/payments/config', { headers: { Accept: 'application/json' }, cache: 'no-store' })
+      .then((response) => response.ok ? response.json() : null)
+      .then((config) => { if (config) setGateway(config); })
+      .catch(() => {});
+  }, []);
 
   // Loading state
   if (authLoading) {
@@ -198,11 +205,11 @@ export default function Checkout() {
       }
     };
 
-    addLog('Initialisation de la connexion SSL...');
+    addLog('Initialisation sécurisée du paiement Mercury...');
     await delay(600);
-    addLog(`Connexion à ${OM_CONFIG[OM_CONFIG.env].url}`, 'ok');
+    addLog(`Passerelle ${gateway.provider} · environnement ${gateway.simulation ? 'simulation locale' : gateway.environment}`, 'ok');
     await delay(500);
-    addLog('Construction de la requête XML-RPC OMPREQ...');
+    addLog('Préparation de la collecte Orange Money...');
     await delay(400);
     addLog(`Requête: customer_msisdn=${phone}, amount=${total} FCFA`);
 
@@ -240,11 +247,11 @@ export default function Checkout() {
 
       addLog(`Commande #${order.id} créée (réf: ${order.reference})`, 'ok');
       await delay(300);
-      addLog(`Référence: ext_txn_id=${extTxnId}`);
+      addLog(`Clé d’idempotence: ${extTxnId}`);
       await delay(400);
-      addLog('Envoi XML-RPC PAYMENT REQUEST...', 'warn');
+      addLog('Transmission de la collecte à l’API MynaPay...', 'warn');
       await delay(1200);
-      addLog('Vérification OTP par Orange Money...');
+      addLog('MynaPay transmet l’OTP au rail Orange Money...');
       await delay(800);
 
       // 2) Lancer le paiement Orange Money
@@ -304,7 +311,7 @@ export default function Checkout() {
         return;
       }
 
-      addLog('Réponse reçue de Orange Money...', 'ok');
+      addLog('Collecte confirmée par MynaPay et Orange Money.', 'ok');
       await delay(300);
       addLog(`TransID: ${data.transId}`, 'ok');
       await delay(200);
@@ -401,7 +408,7 @@ export default function Checkout() {
       setResult({ type: 'error', data: { errorCode: '90001', message: 'Erreur réseau.' } });
       toast.error('Erreur de communication avec le serveur.');
     }
-  }, [otpValue, phone, total, cart, addPurchase, name, email, toast, hasPhysical, shipping]);
+  }, [otpValue, phone, total, cart, addPurchase, name, email, toast, hasPhysical, shipping, gateway]);
 
   const retry = () => {
     setResult(null);
@@ -416,29 +423,30 @@ export default function Checkout() {
     closeModal();
   };
 
-  const env = OM_CONFIG[OM_CONFIG.env];
+  const gatewayEnvironment = gateway.environment === 'production' ? 'production' : 'sandbox';
+  const env = OM_CONFIG[gatewayEnvironment];
   const m = String(Math.floor(otpSeconds / 60)).padStart(2, '0');
   const s = String(otpSeconds % 60).padStart(2, '0');
   const stepGuidance = {
     1: {
       eyebrow: 'Etape 1',
       title: 'Confirmez vos informations de paiement',
-      description: 'Nous utilisons ces informations pour associer la transaction Orange Money à votre commande et à votre bibliothèque.',
+      description: 'Mercury prépare votre commande avant de transmettre la collecte Orange Money à la passerelle MynaPay.',
     },
     2: {
       eyebrow: 'Etape 2',
       title: 'Générez votre code OTP',
-      description: 'Composez le code USSD sur votre téléphone Orange puis revenez ici avec le code reçu par SMS.',
+      description: 'Générez votre OTP Orange par USSD. Il sera envoyé uniquement au backend Mercury, puis à MynaPay.',
     },
     3: {
       eyebrow: 'Etape 3',
       title: 'Validez votre paiement',
-      description: 'Saisissez le code OTP à 6 chiffres pour confirmer la transaction de manière sécurisée.',
+      description: 'L’OTP, le montant et la référence unique servent à créer une collecte MynaPay idempotente.',
     },
     4: {
       eyebrow: 'Etape 4',
       title: 'Traitement en cours',
-      description: 'Nous vérifions le paiement, enregistrons la commande et préparons l’accès à votre bibliothèque.',
+      description: 'Mercury interroge MynaPay jusqu’au statut final avant de confirmer la commande et la bibliothèque.',
     },
   };
 
@@ -451,7 +459,7 @@ export default function Checkout() {
         </div>
       ))}
       <div className="checkout-summary-row fees">
-        <span>Frais Orange Money (1%)</span><span>{fees.toLocaleString()} F</span>
+        <span>Frais de paiement mobile (1%)</span><span>{fees.toLocaleString()} F</span>
       </div>
       <div className="checkout-summary-row total">
         <span>Total à payer</span><span>{total.toLocaleString()} FCFA</span>
@@ -468,10 +476,10 @@ export default function Checkout() {
           <div className="checkout-success" style={{ display: 'block' }}>
             <div className="success-icon"><Icon name="check" size={32} /></div>
             <h3>Paiement réussi !</h3>
-            <p>Transaction Orange Money confirmée</p>
-            <p style={{ color: 'var(--success)', fontWeight: 600 }}>Un SMS de confirmation a été envoyé à votre numéro.</p>
+            <p>Collecte MynaPay confirmée via Orange Money</p>
+            <p style={{ color: 'var(--success)', fontWeight: 600 }}>{gateway.simulation ? 'Simulation locale MynaPay terminée avec succès.' : 'La confirmation opérateur a été enregistrée par Mercury.'}</p>
             <div className="txn-details-card">
-              {[['ID Transaction', txn.transId], ['Montant', `${txn.amount.toLocaleString()} FCFA`], ['Numéro', txn.phone], ['Méthode', 'Orange Money'], ['Date', txn.date]].map(([l, v]) => (
+              {[['ID Transaction', txn.transId], ['Montant', `${txn.amount.toLocaleString()} FCFA`], ['Numéro', txn.phone], ['Passerelle', gateway.provider], ['Opérateur', 'Orange Money'], ['Date', txn.date]].map(([l, v]) => (
                 <div key={l} className="txn-row"><span className="txn-label">{l}</span><span className="txn-val">{v}</span></div>
               ))}
               <div className="txn-row"><span className="txn-label">Statut</span><span className="txn-val" style={{ color: 'var(--success)' }}><Icon name="check" size={14} /> Succès (200)</span></div>
@@ -538,7 +546,7 @@ export default function Checkout() {
         <div>
           <div className="checkout-header">
             <h2><Icon name="creditCard" size={20} /> Paiement Sécurisé</h2>
-            <p>Intégration API Orange Money Burkina Faso</p>
+            <p>Gateway MynaPay · Collecte Orange Money sécurisée</p>
           </div>
 
           <div style={{ padding: '1.5rem 2rem 0' }}>
@@ -596,8 +604,8 @@ export default function Checkout() {
                       <svg viewBox="0 0 48 48" fill="none"><rect width="48" height="48" rx="12" fill="#FF6600"/><path d="M13 24c0-6 4.9-11 11-11s11 4.9 11 11-4.9 11-11 11-11-4.9-11-11z" stroke="#fff" strokeWidth="1.8"/><text x="18" y="22" fontFamily="Arial" fontWeight="900" fontSize="9" fill="#fff">O</text><text x="30" y="29" fontFamily="Arial" fontWeight="900" fontSize="9" fill="#fff">M</text></svg>
                     </div>
                     <div className="checkout-method-info">
-                      <h4>Orange Money <span className="checkout-method-api-tag">API Intégrée</span></h4>
-                      <p>Orange Burkina · Paiement via OTP</p>
+                      <h4>Orange Money <span className="checkout-method-api-tag">via {gateway.provider}</span></h4>
+                      <p>Collecte OTP · {gateway.simulation ? 'Simulation locale' : gateway.environment === 'production' ? 'Production' : 'Sandbox'}</p>
                     </div>
                   </div>
                 </div>
@@ -647,7 +655,7 @@ export default function Checkout() {
                 <button className="checkout-back-btn" onClick={() => goToStep(1)}><Icon name="arrowLeft" size={14} /> Retour</button>
                 <div className="api-info-bar">
                   <div className="api-dot"></div>
-                  <span>Connexion à <strong>apiom.orange.bf</strong> — En attente du code OTP</span>
+                  <span>Parcours <strong>Mercury → MynaPay → Orange Money</strong> — En attente de l’OTP</span>
                 </div>
                 <div className="ussd-instruction">
                   <div className="ussd-phone-icon"></div>
@@ -655,7 +663,7 @@ export default function Checkout() {
                   <p>Ouvrez l'application Téléphone et composez le code USSD ci-dessous pour générer votre code OTP de paiement.</p>
                   <div className="ussd-code-box">
                     <div className="ussd-code">{env.ussd_prefix}{total}{env.ussd_suffix}</div>
-                    <div className="ussd-code-label">Code USSD Orange Money — Production</div>
+                    <div className="ussd-code-label">Code USSD Orange Money — {gatewayEnvironment === 'production' ? 'Production' : 'Test'}</div>
                   </div>
                   <div className="ussd-steps-list">
                     <div className="ussd-step-item"><div className="ussd-step-num">1</div><span>Composez le code USSD ci-dessus sur votre téléphone Orange</span></div>
@@ -672,7 +680,7 @@ export default function Checkout() {
             {step === 3 && (
               <div className="om-panel active">
                 <button className="checkout-back-btn" onClick={() => goToStep(2)}><Icon name="arrowLeft" size={14} /> Retour</button>
-                <div className="api-info-bar"><div className="api-dot"></div><span>Prêt à envoyer <strong>XML-RPC PAYMENT REQUEST</strong></span></div>
+                <div className="api-info-bar"><div className="api-dot"></div><span>Prêt à créer une <strong>collecte MynaPay idempotente</strong></span></div>
                 <div style={{ textAlign: 'center', marginBottom: '0.5rem' }}>
                   <h3 style={{ fontFamily: "'Playfair Display',serif", fontSize: '1.2rem' }}>Entrez votre code OTP</h3>
                   <p style={{ fontSize: '0.9rem', color: 'var(--warm-gray)' }}>Code à 6 chiffres reçu par SMS sur votre Orange</p>
@@ -700,7 +708,7 @@ export default function Checkout() {
                     <div className="processing-icon"><Icon name="shield" size={32} /></div>
                   </div>
                   <h3>Transaction en cours...</h3>
-                  <p>Communication avec la plateforme Orange Money</p>
+                  <p>Communication avec MynaPay et vérification du statut opérateur</p>
                   <p style={{ fontSize: '0.8rem', color: '#FF6B00' }}>Ne fermez pas cette fenêtre</p>
                   <div className="processing-log">
                     {logs.map((l, i) => (
