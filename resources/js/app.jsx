@@ -15,7 +15,6 @@ import PublishingHouse from './components/PublishingHouse';
 // Lazy loaded components pour performance
 const FeaturedSection = lazy(() => import('./components/FeaturedSection'));
 const LatestReleases = lazy(() => import('./components/LatestReleases'));
-const AuthorsSection = lazy(() => import('./components/AuthorsSection').then(m => ({ default: m.default })));
 const AuthorProfile = lazy(() => import('./components/AuthorsSection').then(m => ({ default: m.AuthorProfile })));
 const Catalog = lazy(() => import('./components/Catalog').then(m => ({ default: m.default })));
 const BookDetail = lazy(() => import('./components/Catalog').then(m => ({ default: m.BookDetail })));
@@ -105,7 +104,6 @@ function Footer() {
                     <h4>Navigation</h4>
                     <a href="#accueil" onClick={(e) => { e.preventDefault(); scrollToSection('accueil'); }}>Accueil</a>
                     <a href="#maison" onClick={(e) => { e.preventDefault(); scrollToSection('maison'); }}>Maison d'édition</a>
-                    <a href="#auteurs" onClick={(e) => { e.preventDefault(); scrollToSection('auteurs'); }}>Auteurs</a>
                     <a href="#catalogue" onClick={(e) => { e.preventDefault(); scrollToSection('catalogue'); }}>Catalogue</a>
                 </div>
                 <div className="footer-col">
@@ -194,11 +192,6 @@ function App() {
             <ErrorBoundary>
                 <Suspense fallback={<SectionLoader />}>
                     <LatestReleases />
-                </Suspense>
-            </ErrorBoundary>
-            <ErrorBoundary>
-                <Suspense fallback={<SectionLoader />}>
-                    <AuthorsSection />
                 </Suspense>
             </ErrorBoundary>
             <ErrorBoundary>

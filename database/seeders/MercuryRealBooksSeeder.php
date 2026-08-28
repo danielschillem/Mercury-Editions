@@ -551,6 +551,7 @@ class MercuryRealBooksSeeder extends Seeder
         }
 
         $legacyBooksQuery = Book::query()
+            ->where('rights_status', 'contracted')
             ->whereNotIn('title', $bookTitles)
             ->doesntHave('orderItems');
 
