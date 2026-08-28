@@ -540,187 +540,56 @@ export default function Checkout() {
     );
   }
 
+  const checkoutStepLabels = ['Coordonnées', 'Générer OTP', 'Confirmer', 'Validation'];
+  const itemCount = cart.reduce((sum, item) => sum + (item.quantity || 1), 0);
+
   return (
-    <div className="checkout-overlay open">
-      <div className="checkout-modal">
-        <div>
-          <div className="checkout-header">
-            <h2><Icon name="creditCard" size={20} /> Paiement Sécurisé</h2>
-            <p>Gateway MynaPay · Collecte Orange Money sécurisée</p>
-          </div>
+    <div className="checkout-overlay open mynapay-checkout-overlay">
+      <div className="checkout-modal mynapay-checkout">
+        <header className="mynapay-header">
+          <div className="mynapay-brandmark">M</div>
+          <div className="mynapay-title"><span>Paiement orchestré par</span><strong>MynaPay</strong></div>
+          <div className={`mynapay-environment${gateway.simulation ? ' simulation' : ''}`}><i />{gateway.simulation ? 'Simulation locale' : gateway.environment}</div>
+          <button type="button" className="mynapay-close" onClick={handleClose} aria-label="Fermer"><Icon name="close" size={18} /></button>
+        </header>
 
-          <div style={{ padding: '1.5rem 2rem 0' }}>
-            <div className="om-steps">
-              {[1, 2, 3, 4].map(i => (
-                <span key={i}>
-                  <div className={`om-step-dot${i === step ? ' active' : i < step ? ' done' : ''}`}>{i}</div>
-                  {i < 4 && <div className={`om-step-line${i < step ? ' done' : ''}`}></div>}
-                </span>
-              ))}
-            </div>
-          </div>
+        <nav className="mynapay-progress" aria-label="Étapes du paiement">
+          {checkoutStepLabels.map((label, index) => {
+            const number = index + 1;
+            return <div key={label} className={`mynapay-progress-step${number === step ? ' active' : number < step ? ' done' : ''}`}><span>{number < step ? <Icon name="check" size={12} /> : number}</span><small>{label}</small></div>;
+          })}
+        </nav>
 
-          <div className="checkout-body">
-            <div className="checkout-context-card">
-              <div className="checkout-context-copy">
-                <span className="checkout-context-kicker">{stepGuidance[step]?.eyebrow}</span>
-                <h3>{stepGuidance[step]?.title}</h3>
-                <p>{stepGuidance[step]?.description}</p>
-              </div>
-              <div className="checkout-context-meta">
-                <div className="checkout-account-chip">
-                  <Icon name="user" size={14} />
-                  <span>{user ? `${user.name} connecté` : 'Commande invitée'}</span>
-                </div>
-                <div className="checkout-account-chip">
-                  <Icon name="library" size={14} />
-                  <span>{cart.reduce((sum, item) => sum + (item.quantity || 1), 0)} article{cart.length > 1 ? 's' : ''}</span>
-                </div>
-              </div>
-            </div>
+        <div className="mynapay-layout">
+          <main className="mynapay-main">
+            <div className="mynapay-step-heading"><span>{stepGuidance[step]?.eyebrow}</span><h2>{stepGuidance[step]?.title}</h2><p>{stepGuidance[step]?.description}</p></div>
 
-            {user && (
-              <div className="checkout-customer-card">
-                <div className="checkout-customer-head">
-                  <div className="checkout-customer-avatar">{user.name?.charAt(0)?.toUpperCase() || 'U'}</div>
-                  <div>
-                    <strong>{user.name}</strong>
-                    <p>{user.email}</p>
-                  </div>
-                </div>
-                <div className="checkout-customer-details">
-                  <span><Icon name="smartphone" size={13} /> {phone || user.phone || 'Numéro à confirmer'}</span>
-                  <span><Icon name="check" size={13} /> Vos achats seront ajoutés à votre bibliothèque</span>
-                </div>
+            {step === 1 && <div className="mynapay-step-content">
+              <div className="mynapay-rail-card"><div className="mynapay-orange-logo">OM</div><div><span>Moyen de paiement</span><strong>Orange Money Burkina</strong><small>Collecte OTP via l’API MynaPay</small></div><Icon name="check" size={18} /></div>
+              <div className="mynapay-fields-grid">
+                <div className="form-group full"><label><Icon name="smartphone" size={14} /> Numéro Orange Money</label><input type="tel" placeholder="Ex : 70 12 34 56" maxLength="12" value={phone} onChange={e => { setPhone(e.target.value); setPhoneError(''); }} className={phoneError ? 'error' : ''} /><div className="form-hint">Numéro burkinabè à 8 chiffres</div>{phoneError && <div className="form-error visible">{phoneError}</div>}</div>
+                <div className="form-group"><label><Icon name="user" size={14} /> Nom complet</label><input type="text" value={name} onChange={e => setName(e.target.value)} /></div>
+                <div className="form-group"><label><Icon name="mail" size={14} /> Email du reçu</label><input type="email" value={email} onChange={e => setEmail(e.target.value)} /></div>
               </div>
-            )}
+              {hasPhysical && <div className="mynapay-shipping"><h3><Icon name="mapPin" size={16} /> Livraison des livres papier</h3><div className="mynapay-fields-grid"><div className="form-group"><label>Adresse</label><input value={shipping.address} onChange={e => setShipping(p => ({ ...p, address: e.target.value }))} /></div><div className="form-group"><label>Ville</label><input value={shipping.city} onChange={e => setShipping(p => ({ ...p, city: e.target.value }))} /></div><div className="form-group full"><label>Instructions</label><textarea rows="2" value={shipping.notes} onChange={e => setShipping(p => ({ ...p, notes: e.target.value }))} /></div></div></div>}
+              <button className="mynapay-primary" onClick={goToStep2}>Continuer vers l’OTP <Icon name="arrowRight" size={16} /></button>
+            </div>}
 
-            {/* STEP 1 */}
-            {step === 1 && (
-              <div className="om-panel active">
-                <div className="checkout-methods">
-                  <div className="checkout-method selected">
-                    <div className="checkout-method-icon">
-                      <svg viewBox="0 0 48 48" fill="none"><rect width="48" height="48" rx="12" fill="#FF6600"/><path d="M13 24c0-6 4.9-11 11-11s11 4.9 11 11-4.9 11-11 11-11-4.9-11-11z" stroke="#fff" strokeWidth="1.8"/><text x="18" y="22" fontFamily="Arial" fontWeight="900" fontSize="9" fill="#fff">O</text><text x="30" y="29" fontFamily="Arial" fontWeight="900" fontSize="9" fill="#fff">M</text></svg>
-                    </div>
-                    <div className="checkout-method-info">
-                      <h4>Orange Money <span className="checkout-method-api-tag">via {gateway.provider}</span></h4>
-                      <p>Collecte OTP · {gateway.simulation ? 'Simulation locale' : gateway.environment === 'production' ? 'Production' : 'Sandbox'}</p>
-                    </div>
-                  </div>
-                </div>
-                <div className="form-group">
-                  <label>Numéro de téléphone Orange</label>
-                  <input type="tel" placeholder="Ex: 07 12 34 56" maxLength="12" value={phone}
-                    onChange={e => { setPhone(e.target.value); setPhoneError(''); }}
-                    className={phoneError ? 'error' : ''} />
-                  <div className="form-hint">Format Burkina : 07X XX XX XX ou 76X XX XX XX</div>
-                  {phoneError && <div className="form-error visible">{phoneError}</div>}
-                </div>
-                <div className="form-group">
-                  <label><Icon name="user" size={14} /> Nom complet</label>
-                  <input type="text" placeholder="Votre nom et prénom" value={name} onChange={e => setName(e.target.value)} />
-                </div>
-                <div className="form-group">
-                  <label><Icon name="mail" size={14} /> Email (reçu de transaction)</label>
-                  <input type="email" placeholder="votre@email.com" value={email} onChange={e => setEmail(e.target.value)} />
-                </div>
-                {hasPhysical && (
-                  <div className="shipping-section">
-                    <h4 style={{ marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}><Icon name="mapPin" size={15} /> Adresse de livraison</h4>
-                    <p style={{ fontSize: '0.78rem', color: 'var(--warm-gray)', marginBottom: '0.75rem' }}>Requis pour les livres en format papier.</p>
-                    <div className="form-group">
-                      <label>Adresse</label>
-                      <input type="text" placeholder="Rue, quartier, secteur" value={shipping.address} onChange={e => setShipping(p => ({ ...p, address: e.target.value }))} required />
-                    </div>
-                    <div className="form-group">
-                      <label>Ville</label>
-                      <input type="text" placeholder="Ex: Ouagadougou" value={shipping.city} onChange={e => setShipping(p => ({ ...p, city: e.target.value }))} required />
-                    </div>
-                    <div className="form-group">
-                      <label>Notes de livraison (optionnel)</label>
-                      <textarea rows={2} placeholder="Instructions spéciales pour la livraison..." value={shipping.notes} onChange={e => setShipping(p => ({ ...p, notes: e.target.value }))} />
-                    </div>
-                  </div>
-                )}
-                <div className="checkout-summary">{summaryRows}</div>
-                <button className="checkout-pay-btn om-btn" onClick={goToStep2}>Continuer — Générer le code OTP <Icon name="arrowRight" size={16} /></button>
-                <button className="checkout-cancel" onClick={handleClose}>Annuler</button>
-              </div>
-            )}
+            {step === 2 && <div className="mynapay-step-content"><button className="mynapay-back" onClick={() => goToStep(1)}><Icon name="arrowLeft" size={14} /> Modifier les coordonnées</button><div className="mynapay-ussd-card"><div className="mynapay-phone-visual"><span>*</span><Icon name="smartphone" size={34} /></div><span className="mynapay-overline">Depuis le téléphone associé au {phone}</span><h3>Composez le code Orange</h3><button type="button" className="mynapay-ussd-code" onClick={() => navigator.clipboard?.writeText(`${env.ussd_prefix}${total}${env.ussd_suffix}`)}>{env.ussd_prefix}{total}{env.ussd_suffix}<small>Cliquer pour copier</small></button><ol><li>Composez le code puis validez l’appel USSD.</li><li>Saisissez votre code PIN Orange Money.</li><li>Conservez l’OTP à 6 chiffres reçu par SMS.</li></ol><div className="mynapay-security-note"><Icon name="shield" size={16} /> Votre PIN Orange Money n’est jamais saisi sur Mercury.</div></div><button className="mynapay-primary" onClick={() => goToStep(3)}>J’ai mon code OTP <Icon name="arrowRight" size={16} /></button></div>}
 
-            {/* STEP 2 */}
-            {step === 2 && (
-              <div className="om-panel active">
-                <button className="checkout-back-btn" onClick={() => goToStep(1)}><Icon name="arrowLeft" size={14} /> Retour</button>
-                <div className="api-info-bar">
-                  <div className="api-dot"></div>
-                  <span>Parcours <strong>Mercury → MynaPay → Orange Money</strong> — En attente de l’OTP</span>
-                </div>
-                <div className="ussd-instruction">
-                  <div className="ussd-phone-icon"></div>
-                  <h3>Composez ce code sur votre téléphone</h3>
-                  <p>Ouvrez l'application Téléphone et composez le code USSD ci-dessous pour générer votre code OTP de paiement.</p>
-                  <div className="ussd-code-box">
-                    <div className="ussd-code">{env.ussd_prefix}{total}{env.ussd_suffix}</div>
-                    <div className="ussd-code-label">Code USSD Orange Money — {gatewayEnvironment === 'production' ? 'Production' : 'Test'}</div>
-                  </div>
-                  <div className="ussd-steps-list">
-                    <div className="ussd-step-item"><div className="ussd-step-num">1</div><span>Composez le code USSD ci-dessus sur votre téléphone Orange</span></div>
-                    <div className="ussd-step-item"><div className="ussd-step-num">2</div><span>Entrez votre code PIN Orange Money lorsque demandé</span></div>
-                    <div className="ussd-step-item"><div className="ussd-step-num">3</div><span>Vous recevrez un SMS avec un code OTP à 6 chiffres</span></div>
-                  </div>
-                  <div className="ussd-waiting"><div className="spinner"></div><span>En attente de votre code OTP...</span></div>
-                </div>
-                <button className="checkout-pay-btn" onClick={() => goToStep(3)}>J'ai reçu mon code OTP <Icon name="arrowRight" size={16} /></button>
-              </div>
-            )}
+            {step === 3 && <div className="mynapay-step-content"><button className="mynapay-back" onClick={() => goToStep(2)}><Icon name="arrowLeft" size={14} /> Revoir le code USSD</button><div className="mynapay-otp-card"><div className="mynapay-lock"><Icon name="lock" size={24} /></div><span className="mynapay-overline">Autorisation Orange Money</span><h3>Saisissez votre OTP</h3><p>Une seule tentative métier sera envoyée à MynaPay avec la référence de votre commande.</p><div className="otp-input-group">{otp.map((digit, index) => <input key={index} ref={element => otpRefs.current[index] = element} type="text" className={`otp-digit${digit ? ' filled' : ''}`} maxLength="1" inputMode="numeric" value={digit} onChange={event => handleOtpChange(index, event.target.value)} onKeyDown={event => handleOtpKeyDown(index, event)} />)}</div>{otpError && <div className="form-error visible">{otpError}</div>}<div className="mynapay-otp-time"><Icon name="clock" size={14} /> Expire dans <strong>{otpSeconds > 0 ? `${m}:${s}` : 'Expiré'}</strong></div></div><button className="mynapay-primary" onClick={processPayment} disabled={!otpComplete}>Payer {total.toLocaleString('fr-FR')} FCFA <Icon name="arrowRight" size={16} /></button></div>}
 
-            {/* STEP 3 */}
-            {step === 3 && (
-              <div className="om-panel active">
-                <button className="checkout-back-btn" onClick={() => goToStep(2)}><Icon name="arrowLeft" size={14} /> Retour</button>
-                <div className="api-info-bar"><div className="api-dot"></div><span>Prêt à créer une <strong>collecte MynaPay idempotente</strong></span></div>
-                <div style={{ textAlign: 'center', marginBottom: '0.5rem' }}>
-                  <h3 style={{ fontFamily: "'Playfair Display',serif", fontSize: '1.2rem' }}>Entrez votre code OTP</h3>
-                  <p style={{ fontSize: '0.9rem', color: 'var(--warm-gray)' }}>Code à 6 chiffres reçu par SMS sur votre Orange</p>
-                </div>
-                <div className="otp-input-group">
-                  {otp.map((d, i) => (
-                    <input key={i} ref={el => otpRefs.current[i] = el} type="text" className={`otp-digit${d ? ' filled' : ''}`} maxLength="1" inputMode="numeric"
-                      value={d} onChange={e => handleOtpChange(i, e.target.value)} onKeyDown={e => handleOtpKeyDown(i, e)} />
-                  ))}
-                </div>
-                {otpError && <div className="form-error visible" style={{ textAlign: 'center', marginTop: '0.5rem' }}>{otpError}</div>}
-                <div className="otp-timer">Code valide pendant : <strong>{otpSeconds > 0 ? `${m}:${s}` : 'Expiré'}</strong></div>
-                <div className="checkout-summary">{summaryRows}</div>
-                <button className="checkout-pay-btn om-btn" onClick={processPayment} disabled={!otpComplete}> Confirmer le paiement Orange Money</button>
-                <button className="checkout-cancel" onClick={handleClose}>Annuler</button>
-              </div>
-            )}
+            {step === 4 && !result && <div className="mynapay-step-content"><div className="mynapay-processing"><div className="processing-anim"><div className="processing-ring" /><div className="processing-icon"><Icon name="shield" size={32} /></div></div><span className="mynapay-overline">Collecte en cours</span><h3>MynaPay vérifie la transaction</h3><p>La commande reste en attente tant que l’opérateur n’a pas confirmé le paiement.</p><div className="processing-log">{logs.map((line, index) => <div key={index} className="log-line">{line.type === 'ok' ? <span className="log-ok"><Icon name="check" size={12} /></span> : line.type === 'warn' ? <span className="log-warn"><Icon name="warning" size={12} /></span> : <Icon name="arrowRight" size={12} />} {line.text}</div>)}</div></div></div>}
+          </main>
 
-            {/* STEP 4: Processing */}
-            {step === 4 && !result && (
-              <div className="om-panel active">
-                <div className="processing-panel">
-                  <div className="processing-anim">
-                    <div className="processing-ring"></div>
-                    <div className="processing-icon"><Icon name="shield" size={32} /></div>
-                  </div>
-                  <h3>Transaction en cours...</h3>
-                  <p>Communication avec MynaPay et vérification du statut opérateur</p>
-                  <p style={{ fontSize: '0.8rem', color: '#FF6B00' }}>Ne fermez pas cette fenêtre</p>
-                  <div className="processing-log">
-                    {logs.map((l, i) => (
-                      <div key={i} className="log-line">
-                        {l.type === 'ok' ? <span className="log-ok"><Icon name="check" size={12} /></span> : l.type === 'warn' ? <span className="log-warn"><Icon name="warning" size={12} /></span> : <Icon name="arrowRight" size={12} />} {l.text}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
+          <aside className="mynapay-summary">
+            <div className="mynapay-customer"><div>{user.name?.charAt(0)?.toUpperCase()}</div><span><small>Compte Mercury</small><strong>{user.name}</strong><em>{user.email}</em></span></div>
+            <div className="mynapay-summary-title"><span>Votre commande</span><small>{itemCount} article{itemCount > 1 ? 's' : ''}</small></div>
+            <div className="mynapay-items">{cart.map(item => <div className="mynapay-item" key={`${item.id}-${item.format}`}><div>{item.cover_image ? <img src={item.cover_image} alt="" /> : <span>{item.title.charAt(0)}</span>}</div><section><strong>{item.title}</strong><small>{item.format === 'physical' ? 'Livre papier' : 'Ebook'} · ×{item.quantity || 1}</small></section><b>{(item.finalPrice * (item.quantity || 1)).toLocaleString('fr-FR')} F</b></div>)}</div>
+            <div className="mynapay-totals"><div><span>Sous-total</span><b>{cartTotal.toLocaleString('fr-FR')} F</b></div><div><span>Frais mobile money</span><b>{fees.toLocaleString('fr-FR')} F</b></div><div className="total"><span>Total</span><b>{total.toLocaleString('fr-FR')} <small>FCFA</small></b></div></div>
+            <div className="mynapay-route"><div><span>Mercury</span><Icon name="arrowRight" size={12} /><span>MynaPay</span><Icon name="arrowRight" size={12} /><span>Orange</span></div><p><Icon name="shield" size={13} /> API backend, idempotence et contrôle du statut</p></div>
+            <button className="mynapay-cancel" onClick={handleClose}>Annuler le paiement</button>
+          </aside>
         </div>
       </div>
     </div>
