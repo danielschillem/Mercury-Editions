@@ -12,7 +12,7 @@ export default function LatestReleases() {
     const yearDelta = Number(b.year || 0) - Number(a.year || 0);
     if (yearDelta !== 0) return yearDelta;
     return Number(b.id || 0) - Number(a.id || 0);
-  });
+  }).slice(0, 12);
   // Duplicate for infinite scroll illusion
   const doubled = [...latest, ...latest];
 

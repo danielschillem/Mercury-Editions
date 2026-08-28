@@ -315,6 +315,8 @@ class CustomerAuthController extends Controller
 
     public function addToWishlist(Request $request, \App\Models\Book $book): JsonResponse
     {
+        abort_unless($book->publication_status === 'published', 404);
+
         $user = $request->user();
         $exists = $user->wishlists()->where('book_id', $book->id)->exists();
 

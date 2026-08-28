@@ -5,18 +5,20 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Traits\EscapesLikeWildcards;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class UserController extends Controller
 {
+    use EscapesLikeWildcards;
     public function index(Request $request): JsonResponse
     {
         $query = User::query();
 
         if ($request->filled('search')) {
-            $search = $request->input('search');
+            $search = $this->escapeLike((string) $request->input('search'));
             $query->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
                   ->orWhere('email', 'like', "%{$search}%")

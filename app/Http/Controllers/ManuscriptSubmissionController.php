@@ -21,7 +21,7 @@ class ManuscriptSubmissionController extends Controller
             'email' => ['required', 'email', 'max:120'],
             'phone' => ['nullable', 'string', 'max:30'],
             'title' => ['required', 'string', 'max:180'],
-            'collection' => ['required', 'exists:editorial_collections,slug'],
+            'collection' => ['required', 'exists:editorial_collections,slug', Rule::notIn(['patrimoines-savoirs-libres'])],
             'genre' => ['nullable', 'string', 'max:80'],
             'page_count' => ['nullable', 'integer', 'min:1', 'max:5000'],
             'manuscript_url' => ['nullable', 'url', 'max:500'],

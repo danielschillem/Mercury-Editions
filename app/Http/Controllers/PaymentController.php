@@ -4,196 +4,123 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
+use App\Http\Traits\NormalizesPhone;
+use App\Models\Order;
+use App\Services\MynaPayGateway;
+use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
-use App\Http\Traits\NormalizesPhone;
 
 class PaymentController extends Controller
 {
     use NormalizesPhone;
+
+    public function __construct(private readonly MynaPayGateway $gateway) {}
+
     public function processOrangeMoney(Request $request): JsonResponse
     {
-        $request->merge([
-            'phone' => $this->normalizePhone($request->input('phone')),
-        ]);
-
+        $request->merge(['phone' => $this->normalizePhone($request->input('phone'))]);
         $validated = $request->validate([
-            'phone'     => ['required', 'regex:/^\d{8}$/'],
-            'amount'    => ['required', 'integer', 'min:1'],
-            'otp'       => ['required', 'regex:/^\d{6}$/'],
-            'refNumber' => ['required', 'string', 'max:50'],
-            'extTxnId'  => ['required', 'string', 'max:50'],
+            'phone' => ['required', 'regex:/^\d{8}$/'], 'amount' => ['nullable', 'integer', 'min:1'],
+            'otp' => ['required', 'regex:/^\d{6}$/'], 'refNumber' => ['required', 'string', 'max:50'],
+            'extTxnId' => ['required', 'string', 'max:80'],
         ]);
 
-        $countryCode = config('orangemoney.country_code', '226');
-        $customerMsisdn = $countryCode . $validated['phone'];
+        $order = Order::where('reference', $validated['refNumber'])->first();
+        if ($order) $amount = (int) $order->total_amount;
+        elseif (isset($validated['amount'])) $amount = (int) $validated['amount'];
+        else return $this->error('MISSING_AMOUNT', 'Montant requis lorsque la référence de commande est introuvable.', 422);
 
-        if (config('orangemoney.simulate', false)) {
-            usleep(200_000);
+        $phone = (string) config('mynapay.country_code', '226') . $validated['phone'];
+        if (config('mynapay.simulate', false)) {
+            $transactionId = 'MYNA-SIM-' . strtoupper(bin2hex(random_bytes(6)));
+            $this->storeProof($validated, $transactionId, $amount, $phone);
+            return $this->success($transactionId, $amount, $phone, 'Simulation locale MynaPay active.');
+        }
+        if (blank(config('mynapay.api_key'))) return $this->error('MISCONFIGURED', 'MynaPay n’est pas configuré. Contactez l’administrateur.', 503);
 
-            $simulatedTransId = 'OM' . gmdate('ymd.Hi') . '.C' . str_pad((string) random_int(0, 99999), 5, '0', STR_PAD_LEFT);
+        try {
+            $response = $this->gateway->createOrangeCollection([
+                'external_reference' => $validated['refNumber'], 'operator' => 'orange',
+                'payer_phone' => $phone, 'amount' => $amount, 'fee_amount' => $order?->om_fees,
+                'otp' => $validated['otp'], 'label' => 'Commande Mercury ' . $validated['refNumber'],
+            ], $validated['extTxnId']);
+        } catch (ConnectionException) {
+            return $this->error('GATEWAY_UNREACHABLE', 'La passerelle MynaPay est temporairement indisponible.', 502);
+        }
+        if (! $response->successful()) return $this->gatewayError($response->status(), $response->json());
+        return $this->handleResult($response->json(), $validated, $amount, $phone);
+    }
 
-            Cache::put($this->paymentCacheKey($validated['extTxnId']), [
-                'trans_id' => $simulatedTransId,
-                'reference_number' => $validated['refNumber'],
-                'ext_txn_id' => $validated['extTxnId'],
-                'amount' => (int) $validated['amount'],
-                'phone' => $customerMsisdn,
-                'validated_at' => now()->toIso8601String(),
+    public function checkOrangeMoney(Request $request, string $collectionId): JsonResponse
+    {
+        $validated = $request->validate([
+            'refNumber' => ['required', 'string', 'max:50'], 'extTxnId' => ['required', 'string', 'max:80'],
+        ]);
+        $pending = Cache::get($this->pendingKey($collectionId));
+        if (! is_array($pending) || ($pending['reference_number'] ?? null) !== $validated['refNumber']
+            || ($pending['ext_txn_id'] ?? null) !== $validated['extTxnId']) {
+            return $this->error('COLLECTION_NOT_FOUND', 'Collecte introuvable ou expirée.', 404);
+        }
+        try {
+            $response = $this->gateway->checkCollection($collectionId);
+        } catch (ConnectionException) {
+            return $this->error('GATEWAY_UNREACHABLE', 'La vérification MynaPay est temporairement indisponible.', 502);
+        }
+        if (! $response->successful()) return $this->gatewayError($response->status(), $response->json());
+        return $this->handleResult($response->json(), $validated, (int) $pending['amount'], (string) $pending['phone'], $collectionId);
+    }
+
+    private function handleResult(array $data, array $validated, int $amount, string $phone, ?string $fallbackId = null): JsonResponse
+    {
+        $status = strtolower((string) ($data['status'] ?? 'pending'));
+        $collectionId = (string) ($data['collection_id'] ?? $fallbackId ?? '');
+        $message = (string) ($data['message'] ?? 'Collecte transmise à MynaPay.');
+        if ($status === 'success') {
+            $transactionId = (string) ($data['operator_ref'] ?? $collectionId);
+            if ($transactionId === '') return $this->error('INVALID_GATEWAY_RESPONSE', 'Réponse MynaPay incomplète.', 502);
+            $this->storeProof($validated, $transactionId, $amount, $phone);
+            if ($collectionId !== '') Cache::forget($this->pendingKey($collectionId));
+            return $this->success($transactionId, $amount, $phone, $message);
+        }
+        if ($status === 'pending' && $collectionId !== '') {
+            Cache::put($this->pendingKey($collectionId), [
+                'reference_number' => $validated['refNumber'], 'ext_txn_id' => $validated['extTxnId'],
+                'amount' => $amount, 'phone' => $phone,
             ], now()->addMinutes(30));
-
-            return response()->json([
-                'status'  => 'success',
-                'transId' => $simulatedTransId,
-                'message' => 'Simulation locale active. Configurez .env pour le mode live.',
-                'amount'  => $validated['amount'],
-                'phone'   => $customerMsisdn,
-                'date'    => now()->format('Y-m-d H:i:s'),
-            ]);
+            return response()->json(['status' => 'pending', 'collectionId' => $collectionId,
+                'message' => $message, 'amount' => $amount, 'phone' => $phone], 202);
         }
+        return $this->error('PAYMENT_FAILED', $message, 402);
+    }
 
-        if (empty(config('orangemoney.api_username')) || empty(config('orangemoney.api_password'))) {
-            return response()->json([
-                'status'    => 'error',
-                'errorCode' => 'MISCONFIGURED',
-                'message'   => 'Paiement Orange Money non configuré. Contactez l\'administrateur.',
-            ], 503);
-        }
-
-        $endpoint = config('orangemoney.env') === 'prod'
-            ? config('orangemoney.url_prod')
-            : config('orangemoney.url_test');
-
-        $xmlRequest = $this->buildXmlPayload([
-            'customer_msisdn'  => $customerMsisdn,
-            'merchant_msisdn'  => config('orangemoney.merchant_msisdn', ''),
-            'api_username'     => config('orangemoney.api_username', ''),
-            'api_password'     => config('orangemoney.api_password', ''),
-            'amount'           => (string) $validated['amount'],
-            'provider'         => config('orangemoney.provider', '101'),
-            'provider2'        => config('orangemoney.provider2', '101'),
-            'payid'            => config('orangemoney.payid', '12'),
-            'payid2'           => config('orangemoney.payid2', '12'),
-            'otp'              => $validated['otp'],
-            'reference_number' => $validated['refNumber'],
-            'ext_txn_id'       => $validated['extTxnId'],
-        ]);
-
-        $ch = curl_init($endpoint);
-        if ($ch === false) {
-            return response()->json([
-                'status'    => 'error',
-                'errorCode' => '500',
-                'message'   => "Impossible d'initialiser cURL.",
-            ], 500);
-        }
-
-        curl_setopt_array($ch, [
-            CURLOPT_POST           => true,
-            CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_HTTPHEADER     => ['Content-Type: application/xml; charset=UTF-8'],
-            CURLOPT_POSTFIELDS     => $xmlRequest,
-            CURLOPT_CONNECTTIMEOUT => 15,
-            CURLOPT_TIMEOUT        => 30,
-        ]);
-
-        $xmlResponse = curl_exec($ch);
-        $curlErrno   = curl_errno($ch);
-        $curlError   = curl_error($ch);
-        $httpCode    = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        curl_close($ch);
-
-        if ($curlErrno !== 0 || $xmlResponse === false) {
-            return response()->json([
-                'status'    => 'error',
-                'errorCode' => '90001',
-                'message'   => 'Erreur reseau Orange Money: ' . ($curlError ?: 'unknown'),
-            ], 502);
-        }
-
-        $responseData = $this->parseXmlResponse((string) $xmlResponse);
-        $status  = (string) ($responseData['status'] ?? '');
-        $message = (string) ($responseData['message'] ?? 'Transaction refusee.');
-        $transId = (string) ($responseData['transID'] ?? $responseData['transId'] ?? '');
-
-        $isSuccess = in_array($status, ['200', 'SUCCESS', '00'], true)
-            || ($httpCode >= 200 && $httpCode < 300 && $transId !== '');
-
-        if (! $isSuccess) {
-            $errorCode = $status !== '' ? $status : (string) ($httpCode > 0 ? $httpCode : '90001');
-
-            return response()->json([
-                'status'    => 'error',
-                'errorCode' => $errorCode,
-                'message'   => $message,
-            ], 400);
-        }
-
-        $resolvedTransId = $transId !== ''
-            ? $transId
-            : 'OM' . gmdate('ymd.Hi') . '.C' . str_pad((string) random_int(0, 99999), 5, '0', STR_PAD_LEFT);
-
-        Cache::put($this->paymentCacheKey($validated['extTxnId']), [
-            'trans_id' => $resolvedTransId,
-            'reference_number' => $validated['refNumber'],
-            'ext_txn_id' => $validated['extTxnId'],
-            'amount' => (int) $validated['amount'],
-            'phone' => $customerMsisdn,
+    private function storeProof(array $validated, string $transactionId, int $amount, string $phone): void
+    {
+        Cache::put('om_payment_confirmation:' . $validated['extTxnId'], [
+            'trans_id' => $transactionId, 'reference_number' => $validated['refNumber'],
+            'ext_txn_id' => $validated['extTxnId'], 'amount' => $amount, 'phone' => $phone,
             'validated_at' => now()->toIso8601String(),
         ], now()->addMinutes(30));
-
-        return response()->json([
-            'status'  => 'success',
-            'transId' => $resolvedTransId,
-            'message' => $message !== '' ? $message : 'Transaction validee.',
-            'amount'  => $validated['amount'],
-            'phone'   => $customerMsisdn,
-            'date'    => now()->format('Y-m-d H:i:s'),
-        ]);
     }
 
-    private function paymentCacheKey(string $extTxnId): string
+    private function success(string $id, int $amount, string $phone, string $message): JsonResponse
     {
-        return 'om_payment_confirmation:' . $extTxnId;
+        return response()->json(['status' => 'success', 'transId' => $id, 'message' => $message,
+            'amount' => $amount, 'phone' => $phone, 'date' => now()->format('Y-m-d H:i:s')]);
     }
 
-    private function buildXmlPayload(array $data): string
+    private function gatewayError(int $httpStatus, mixed $body): JsonResponse
     {
-        return sprintf(
-            "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<COMMAND>\n  <TYPE>OMPREQ</TYPE>\n  <customer_msisdn>%s</customer_msisdn>\n  <merchant_msisdn>%s</merchant_msisdn>\n  <api_username>%s</api_username>\n  <api_password>%s</api_password>\n  <amount>%s</amount>\n  <PROVIDER>%s</PROVIDER>\n  <PROVIDER2>%s</PROVIDER2>\n  <PAYID>%s</PAYID>\n  <PAYID2>%s</PAYID2>\n  <otp>%s</otp>\n  <reference_number>%s</reference_number>\n  <ext_txn_id>%s</ext_txn_id>\n</COMMAND>",
-            htmlspecialchars($data['customer_msisdn'], ENT_XML1),
-            htmlspecialchars($data['merchant_msisdn'], ENT_XML1),
-            htmlspecialchars($data['api_username'], ENT_XML1),
-            htmlspecialchars($data['api_password'], ENT_XML1),
-            htmlspecialchars($data['amount'], ENT_XML1),
-            htmlspecialchars($data['provider'], ENT_XML1),
-            htmlspecialchars($data['provider2'], ENT_XML1),
-            htmlspecialchars($data['payid'], ENT_XML1),
-            htmlspecialchars($data['payid2'], ENT_XML1),
-            htmlspecialchars($data['otp'], ENT_XML1),
-            htmlspecialchars($data['reference_number'], ENT_XML1),
-            htmlspecialchars($data['ext_txn_id'], ENT_XML1)
-        );
+        $message = is_array($body) ? (string) ($body['message'] ?? $body['detail'] ?? 'Requête refusée par MynaPay.') : 'Requête refusée par MynaPay.';
+        $status = in_array($httpStatus, [400, 401, 403, 409, 422, 429], true) ? $httpStatus : 502;
+        return $this->error('MYNAPAY_' . $httpStatus, $message, $status);
     }
 
-    private function parseXmlResponse(string $xml): array
+    private function error(string $code, string $message, int $status): JsonResponse
     {
-        libxml_use_internal_errors(true);
-        $doc = simplexml_load_string($xml);
-
-        if ($doc === false) {
-            return [];
-        }
-
-        $result = [];
-        foreach (['status', 'message', 'transID', 'transId'] as $key) {
-            if (isset($doc->{$key})) {
-                $result[$key] = (string) $doc->{$key};
-            }
-        }
-
-        return $result;
+        return response()->json(['status' => 'error', 'errorCode' => $code, 'message' => $message], $status);
     }
 
+    private function pendingKey(string $id): string { return 'mynapay_collection:' . $id; }
 }

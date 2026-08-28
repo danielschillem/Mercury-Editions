@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services;
 
+use App\Http\Traits\EscapesLikeWildcards;
 use App\Models\Book;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
@@ -11,6 +12,7 @@ use Illuminate\Support\Facades\Schema;
 
 class BookCacheService
 {
+    use EscapesLikeWildcards;
     private const CACHE_TTL = 3600; // 1 heure
     private const CACHE_PREFIX = 'mercury_books_';
 
@@ -39,7 +41,7 @@ class BookCacheService
         $cacheKey = self::CACHE_PREFIX . 'single_' . $bookId;
 
         return Cache::remember($cacheKey, self::CACHE_TTL, function () use ($bookId) {
-            $book = Book::with('author')->find($bookId);
+            $book = Book::with('author')->published()->find($bookId);
             
             if ($book) {
                 $book->makeHidden(['ebook_pdf_path', 'ebook_epub_path']);
@@ -69,6 +71,7 @@ class BookCacheService
 
         return Cache::remember($cacheKey, self::CACHE_TTL, function () use ($limit) {
             return Book::query()
+                ->published()
                 ->orderByDesc('rating')
                 ->limit($limit)
                 ->get()
@@ -85,6 +88,7 @@ class BookCacheService
 
         return Cache::remember($cacheKey, self::CACHE_TTL, function () use ($limit) {
             return Book::query()
+                ->published()
                 ->orderByDesc('year')
                 ->orderByDesc('created_at')
                 ->limit($limit)
@@ -101,7 +105,7 @@ class BookCacheService
         $cacheKey = self::CACHE_PREFIX . 'categories';
 
         return Cache::remember($cacheKey, self::CACHE_TTL * 24, function () {
-            return Book::select('category')
+            return Book::published()->select('category')
                 ->distinct()
                 ->pluck('category')
                 ->filter()
@@ -156,14 +160,14 @@ class BookCacheService
      */
     private function fetchBooks(?string $category, ?string $search): Collection
     {
-        $query = Book::query();
+        $query = Book::query()->published();
 
         if ($category) {
             $query->where('category', $category);
         }
 
         if ($search) {
-            $search = trim($search);
+            $search = $this->escapeLike(trim($search));
             $query->where(function ($q) use ($search) {
                 $q->where('title', 'like', "%{$search}%")
                   ->orWhere('author_name', 'like', "%{$search}%")

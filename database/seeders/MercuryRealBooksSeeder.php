@@ -7,6 +7,7 @@ namespace Database\Seeders;
 use App\Models\Author;
 use App\Models\Book;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Str;
 
 /**
  * Seeder pour les véritables ouvrages Mercury Editions 2026.
@@ -446,6 +447,95 @@ class MercuryRealBooksSeeder extends Seeder
             ],
         ];
 
+        // Extension du catalogue à partir du dossier source « Couvertures MERCURY ».
+        // Une seule entrée est conservée lorsque plusieurs maquettes existent.
+        $catalogueExpansion = [
+            ['Agent commercial', 'Nouhoun Diallo', 'agent-commercial-cover-2.png', 'essai', 5500, false],
+            ['Aux combats pour la reconnaissance de la science africaine', 'Bamogo Sayouba Jacob', 'aux-combats-pour-la-reconnaissance-de-la-science-africaine.png', 'essai', 6000, false],
+            ['Burkina Faso, un ténor de l’or', 'Ag Ibrahim Mohamed', 'burkina-faso-un-ténor-de-lor.png', 'essai', 6000, false],
+            ['Cinquante ans d’une avocature en mouvement', 'Ordre des avocats du Burkina Faso', 'cinquante-ans-dune-avocature-en-mouvement.png', 'essai', 5500, false],
+            ['Droit et financement du secteur privé en Afrique de l’Ouest', 'Dr Ousseni Tamboura', 'couverture-1.png', 'essai', 7000, false],
+            ['Intelligence artificielle : comprendre pour mieux adopter et saisir les opportunités', 'Salifou Kindo', 'intéligence-artificielle-comprendre-pour-mieux-adopter-et-saisir-les-opporttunnités.png', 'essai', 6500, false],
+            ['La diplomatie parlementaire', 'N’golo Mélégué Traoré', 'cover-2-diplomatie-parlementaire.png', 'essai', 7000, false],
+            ['Une enfance sous le soleil de Sya', 'Nana Justine Sophie Rosalie Ibriga', 'cover.png', 'roman', 5000, false],
+            ['Capitaine Thomas Sankara, à la découverte d’un leader charismatique', 'Abdramane Zétiyenga', 'capitaine-thomas-sankara-à-la-découverte-dun-leader-charismatique.png', 'essai', 6000, true],
+            ['Essor', 'Yelemcouré B. Pacôme Désiré', 'cover-vf-essor-avant.png', 'poesie', 4000, false],
+            ['D’une foi à une autre, mon chemin vers la lumière', 'Diao Tongbi Marie Christelle', 'dune-foi-à-une-autre-mon-chemin-vers-la-lumière.png', 'essai', 5000, false],
+            ['Dictées et questions — Niveau 6e', 'Pierre Ilboudo', 'dicteüe-cover-2.png', 'jeunesse', 3500, false],
+            ['Dounia : l’harmonie universelle', 'Guigma Poko Armel', 'dounia1.png', 'essai', 5000, false],
+            ['De la croyance du Do à la foi du Credo', 'Mgr Anselme Titianma Sanou', 'de-la-croyance-du-do-à-la-fois-du-credo.png', 'essai', 5500, false],
+            ['Devenir un ancêtre', 'Thierry Millogo', 'devenir-un-ancêtre.png', 'essai', 5000, false],
+            ['Entendez ma voix et que germe l’Amour', 'Lamoussa Théodore Kafando', 'enntendez-ma-voix.png', 'poesie', 3500, false],
+            ['Externalisation des marchés publics', 'Awa Ndoye', 'externalisation-des-marchés-publics.png', 'essai', 6500, false],
+            ['Financement de la lutte contre le terrorisme au Burkina Faso', 'Youssouf Ouattara', 'finacement-de-la-lutte-contre-le-terrorisme-au-burkina-faso.png', 'essai', 6500, false],
+            ['Funding Counterterrorism in Burkina Faso', 'Youssouf Ouattara', 'funding-counterterrorrism-in-burkina-faso.png', 'essai', 6500, false],
+            ['Karfa, manuel de l’émancipation', 'Wangnin Zerbo', 'karfa.png', 'essai', 5000, false],
+            ['L’hymne national, le Di-taa-niyè', 'Sié François d’Assise Coulibaly', 'lhymne-nationalepng-le-ditaaniyè.png', 'essai', 5000, false],
+            ['L’éducation du citoyen à la sécurité', 'Waka Loué', 'léducation-du-citoyen-à-la-sécurité.png', 'essai', 5000, false],
+            ['La force d’oser', 'Amidou Bolly', 'la-force-doser.png', 'essai', 5500, true],
+            ['La Rose noire', 'Lamboni Lengue Bantian Fidèle', 'la-rose-noire.png', 'roman', 5000, false],
+            ['Le Capitaine Ibrahim Traoré a dit', 'Ibrahim Traoré', 'le-capitaine-ibrahim-traoré-à-dit.png', 'essai', 6000, true],
+            ['Le karma des hommes et des femmes', 'Wendab Méliane Alda Ouédraogo', 'le-karma-des-hommes-et-des-femmes.png', 'conte', 4500, false],
+            ['Les aventures multiculturelles d’une femme africaine', 'Fatim Touré', 'les-avantures-multticulturelles-dune-femme-afroicaine.png', 'roman', 5500, false],
+            ['Les murmurations, chemin de vie et transformation spirituelle', 'Pazisnewende Wangraoua', 'les-murmurations-chemin-de-vie-et-transformation-spirituelle.png', 'essai', 5000, false],
+            ['L’élaboration du manuel de procédures à valeur ajoutée', 'Auguste Noël Ouédraogo', 'lélaboration-du-manuel-de-procedures-à-valeur-ajoutée.png', 'essai', 6500, false],
+            ['Hummm… Et la vie continue !', 'Mariam Vanessa Touré', 'mariam-vanessa-toure1.png', 'essai', 5000, false],
+            ['Monsieur le Maire', 'Dr Vincent Sédogo & Dre Minima Alice Some/Somda', 'monsieur-le-maire.png', 'essai', 6000, false],
+            ['Osez rêver votre vie pour vivre votre rêve', 'Kiswendsida Ezéchiel Ouédraogo', 'osez-rêver-votre-vie-pour-vivre-votre-rêve.png', 'essai', 5000, false],
+            ['Pour le Faso, j’ai tenu', 'Julio Lucrèce Bazi', 'pour-le-faso-jai-tenu.png', 'essai', 5000, false],
+            ['Poudres blanches et ordures humaines', 'Pr Dandjinou Ilaihola Sabin Lazare', 'poure-blanches-et-ordures-humaines.png', 'roman', 5000, false],
+            ['Quand la parole guérit', 'Aoua Carole Congo', 'quand-la-parole-guerrit.png', 'essai', 5000, false],
+            ['Alerte !', 'Issaka Bonkoungou', 'alerte.png', 'conte', 4000, false],
+            ['Thomas Sankara, les témoignages en toute vérité', 'Charlès Kiendrebéogo', 'thomas-sankara-les-témoignages-en-toute-verité.png', 'essai', 6000, false],
+            ['Reconquête', 'Harouna Gnessien', 'reconqueéte-recto-1.png', 'poesie', 4000, false],
+        ];
+
+        foreach ($catalogueExpansion as $index => [$title, $authorName, $cover, $category, $price, $featured]) {
+            $authorSlug = Str::slug($authorName);
+            Author::updateOrCreate(
+                ['slug' => $authorSlug],
+                [
+                    'name' => $authorName,
+                    'icon' => $category === 'poesie' ? 'pen' : 'book-open',
+                    'origin' => 'Burkina Faso',
+                    'born' => '', 'died' => '',
+                    'color' => $featured ? '#b91c1c' : '#78350f',
+                    'genres' => [ucfirst($category)],
+                    'bio' => '<p>' . e($authorName) . ' est l’auteur de « ' . e($title) . ' », publié par Mercury Editions.</p>',
+                    'timeline' => [['year' => '2026', 'text' => 'Publication chez Mercury Editions']],
+                    'awards' => [],
+                ]
+            );
+
+            $books[] = [
+                'title' => $title,
+                'author_name' => $authorName,
+                'author_slug' => $authorSlug,
+                'price' => $price,
+                'category' => $category,
+                'rating' => $featured ? 5.0 : 4.4,
+                'is_featured' => $featured,
+                'local' => true,
+                'color' => $featured ? '#b91c1c' : '#78350f',
+                'cover_image' => '/images/covers/mercury/' . $cover,
+                'year' => 2026,
+                'pages' => 180,
+                'publisher' => 'Mercury Editions',
+                'language' => str_starts_with($title, 'Funding ') ? 'Anglais' : 'Français',
+                'isbn' => 'ME-2026-' . str_pad((string) ($index + 1), 3, '0', STR_PAD_LEFT),
+                'tags' => [$category, 'Mercury Editions', 'Burkina Faso'],
+                'description' => 'Découvrez « ' . $title . ' », une œuvre de ' . $authorName . ' publiée dans le nouveau catalogue Mercury Editions.',
+                'summary' => 'Cette fiche éditoriale présente l’ouvrage « ' . $title . ' ». Les informations complémentaires seront enrichies à partir des éléments définitifs transmis par la maison d’édition.',
+                'quote' => 'Une publication Mercury Editions.',
+            ];
+        }
+
+        $authorSlugs = array_values(array_unique(array_merge($authorSlugs, array_map(
+            fn (array $entry) => Str::slug($entry[1]),
+            $catalogueExpansion
+        ))));
+        $slugToId = Author::pluck('id', 'slug')->toArray();
+
         $bookTitles = array_column($books, 'title');
 
         foreach ($books as $bookData) {
@@ -475,7 +565,7 @@ class MercuryRealBooksSeeder extends Seeder
         $legacyAuthorsQuery->delete();
 
         $this->command->info('[OK] ' . count($books) . ' ouvrages Mercury réels créés/mis à jour.');
-        $this->command->info('[OK] ' . count($authors) . ' auteurs Mercury réels créés/mis à jour.');
+        $this->command->info('[OK] ' . count($authorSlugs) . ' auteurs Mercury réels créés/mis à jour.');
         $this->command->info('[OK] ' . $legacyBooksDeleted . ' ouvrages démo supprimés.');
         $this->command->info('[OK] ' . $legacyAuthorsDeleted . ' auteurs démo supprimés.');
     }

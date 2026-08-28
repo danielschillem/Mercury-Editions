@@ -4,8 +4,13 @@ import Icon, { StarRating, FlagBF } from './Icons';
 export default function FeaturedSection() {
   const { books, authors, openModal } = useApp();
 
-  // Top 3 highest-rated books
-  const featuredBooks = [...books].sort((a, b) => b.rating - a.rating).slice(0, 3);
+  // Sélection éditoriale explicite, avec repli sur les mieux notés pour les
+  // anciennes bases qui ne disposent pas encore du marqueur is_featured.
+  const curatedBooks = books.filter(book => book.is_featured);
+  const featuredBooks = (curatedBooks.length > 0 ? curatedBooks : books)
+    .slice()
+    .sort((a, b) => Number(b.rating) - Number(a.rating) || Number(b.year) - Number(a.year))
+    .slice(0, 3);
   // Top 3 authors by number of books
   const featuredAuthors = [...authors]
     .map(a => ({ ...a, bookCount: books.filter(b => b.author_id === a.id).length }))

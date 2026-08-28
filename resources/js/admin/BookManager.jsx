@@ -4,9 +4,12 @@ import Icon from '../components/Icons';
 
 const emptyBook = {
   title: '', author_id: '', editorial_collection_id: '', author_name: '', price: 0, category: 'roman',
-  rating: 4.0, local: true, color: '#1a1a2e', cover_image: '', year: 2024, pages: 200,
+  rating: 4.0, local: true, is_featured: false, color: '#1a1a2e', cover_image: '', year: 2024, pages: 200,
   publication_date: '', publisher: '', editorial_director: '', language: 'Francais', isbn: '', tags: '',
   description: '', summary: '', public_excerpt: '', quote: '',
+  publication_status: 'draft', rights_status: 'contracted', commercial_distribution_allowed: false,
+  source_url: '', license_name: '', license_url: '', attribution_text: '', author_death_year: '',
+  rights_notes: '', rights_reviewed_at: '',
 };
 
 const categories = [
@@ -17,11 +20,15 @@ const categories = [
   { value: 'jeunesse', label: 'Jeunesse' },
   { value: 'nouvelles', label: 'Nouvelles' },
   { value: 'theatre', label: 'Theatre' },
+  { value: 'developpement', label: 'Développement personnel' },
+  { value: 'sante', label: 'Santé' },
+  { value: 'spiritualite', label: 'Spiritualité' },
 ];
 
 const categoryColors = {
   roman: '#3B82F6', poesie: '#8B5CF6', essai: '#F59E0B', conte: '#10B981',
   jeunesse: '#EC4899', nouvelles: '#6366F1', theatre: '#EF4444',
+  developpement: '#0EA5E9', sante: '#14B8A6', spiritualite: '#7C3AED',
 };
 
 export default function BookManager() {
@@ -102,6 +109,8 @@ export default function BookManager() {
       publication_date: form.publication_date || null,
       pages: Number(form.pages),
       local: Boolean(form.local),
+      is_featured: Boolean(form.is_featured),
+      commercial_distribution_allowed: Boolean(form.commercial_distribution_allowed),
       author_id: form.author_id ? Number(form.author_id) : null,
       editorial_collection_id: form.editorial_collection_id ? Number(form.editorial_collection_id) : null,
       tags: typeof form.tags === 'string'
@@ -208,7 +217,7 @@ export default function BookManager() {
             <thead>
               <tr>
                 <th>Livre</th><th>Auteur</th><th>Prix</th>
-                <th>Categorie</th><th>Collection</th><th>Note</th><th>Annee</th><th>Actions</th>
+                <th>Categorie</th><th>Collection</th><th>Diffusion</th><th>Note</th><th>Annee</th><th>Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -242,6 +251,14 @@ export default function BookManager() {
                     ) : <span className="text-muted text-sm">Non assignée</span>}
                   </td>
                   <td>
+                    <span className="badge" style={{
+                      background: b.publication_status === 'published' ? '#DCFCE7' : '#FEF3C7',
+                      color: b.publication_status === 'published' ? '#166534' : '#92400E',
+                    }}>
+                      {b.publication_status === 'published' ? 'Publié' : b.publication_status === 'legal_review' ? 'Revue juridique' : b.publication_status === 'archived' ? 'Archivé' : 'Brouillon'}
+                    </span>
+                  </td>
+                  <td>
                     <div className="rating-display">
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="#F59E0B" stroke="#F59E0B" strokeWidth="1"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
                       <span>{b.rating}</span>
@@ -259,7 +276,7 @@ export default function BookManager() {
                 </tr>
               ))}
               {filtered.length === 0 && (
-                <tr><td colSpan={8} className="admin-empty">Aucun livre trouve.</td></tr>
+                <tr><td colSpan={9} className="admin-empty">Aucun livre trouve.</td></tr>
               )}
             </tbody>
           </table>
@@ -304,6 +321,9 @@ export default function BookManager() {
                     <div><span className="preview-label">Langue</span><span>{preview.language}</span></div>
                     <div><span className="preview-label">ISBN</span><span>{preview.isbn}</span></div>
                     <div><span className="preview-label">Note</span><span>{preview.rating} / 5</span></div>
+                    <div><span className="preview-label">Publication</span><span>{preview.publication_status || 'published'}</span></div>
+                    <div><span className="preview-label">Droits</span><span>{preview.rights_status || 'contracted'}</span></div>
+                    <div><span className="preview-label">Vente</span><span>{preview.commercial_distribution_allowed ? 'Autorisée' : 'Bloquée'}</span></div>
                   </div>
                   {preview.tags && preview.tags.length > 0 && (
                     <div className="preview-tags">
@@ -404,6 +424,49 @@ export default function BookManager() {
                   <input type="checkbox" id="local" checked={form.local} onChange={e => handleChange('local', e.target.checked)} className="form-checkbox" />
                   <label htmlFor="local" className="form-check-label">Livre local (Burkina Faso)</label>
                 </div>
+                <div className="form-group" style={{ display: 'flex', alignItems: 'center', gap: 8, paddingTop: 24 }}>
+                  <input type="checkbox" id="is_featured" checked={Boolean(form.is_featured)} onChange={e => handleChange('is_featured', e.target.checked)} className="form-checkbox" />
+                  <label htmlFor="is_featured" className="form-check-label">Afficher parmi les œuvres en vedette</label>
+                </div>
+                <FormField label="Statut de publication" error={errors.publication_status}>
+                  <select className="form-select" value={form.publication_status || 'draft'} onChange={e => handleChange('publication_status', e.target.value)}>
+                    <option value="draft">Brouillon</option>
+                    <option value="legal_review">Revue juridique</option>
+                    <option value="published">Publié</option>
+                    <option value="archived">Archivé</option>
+                  </select>
+                </FormField>
+                <FormField label="Statut des droits" error={errors.rights_status}>
+                  <select className="form-select" value={form.rights_status || 'contracted'} onChange={e => handleChange('rights_status', e.target.value)}>
+                    <option value="contracted">Contrat Mercury</option>
+                    <option value="public_domain_review">Domaine public à vérifier</option>
+                    <option value="public_domain_cleared">Domaine public validé</option>
+                    <option value="open_license">Licence ouverte validée</option>
+                    <option value="restricted">Droits restreints</option>
+                  </select>
+                </FormField>
+                <div className="form-group" style={{ display: 'flex', alignItems: 'center', gap: 8, paddingTop: 24 }}>
+                  <input type="checkbox" id="commercial_distribution_allowed" checked={Boolean(form.commercial_distribution_allowed)} onChange={e => handleChange('commercial_distribution_allowed', e.target.checked)} className="form-checkbox" />
+                  <label htmlFor="commercial_distribution_allowed" className="form-check-label">Distribution commerciale autorisée</label>
+                </div>
+                <FormField label="Année de décès de l’auteur" error={errors.author_death_year}>
+                  <input type="number" className="form-input" value={form.author_death_year || ''} onChange={e => handleChange('author_death_year', e.target.value)} />
+                </FormField>
+                <FormField label="Source du texte" error={errors.source_url} full>
+                  <input type="url" className="form-input" value={form.source_url || ''} onChange={e => handleChange('source_url', e.target.value)} placeholder="https://…" />
+                </FormField>
+                <FormField label="Nom de la licence" error={errors.license_name}>
+                  <input className="form-input" value={form.license_name || ''} onChange={e => handleChange('license_name', e.target.value)} placeholder="Domaine public, CC BY-SA 3.0 IGO…" />
+                </FormField>
+                <FormField label="URL de la licence" error={errors.license_url}>
+                  <input type="url" className="form-input" value={form.license_url || ''} onChange={e => handleChange('license_url', e.target.value)} />
+                </FormField>
+                <FormField label="Attribution obligatoire" error={errors.attribution_text} full>
+                  <textarea className="form-textarea" rows={2} value={form.attribution_text || ''} onChange={e => handleChange('attribution_text', e.target.value)} />
+                </FormField>
+                <FormField label="Notes juridiques internes" error={errors.rights_notes} full>
+                  <textarea className="form-textarea" rows={3} value={form.rights_notes || ''} onChange={e => handleChange('rights_notes', e.target.value)} placeholder="Validation BBDA, traduction, illustrations, restrictions…" />
+                </FormField>
                 <FormField label="Tags (separes par virgule)" error={errors.tags} full>
                   <input className="form-input" value={form.tags} onChange={e => handleChange('tags', e.target.value)} placeholder="fiction, afrique, aventure" />
                 </FormField>

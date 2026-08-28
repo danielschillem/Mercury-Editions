@@ -69,6 +69,12 @@ class OrderController extends Controller
 
         $items = collect($validated['items'])->map(function (array $item) {
             $book = Book::findOrFail($item['book_id']);
+
+            abort_unless(
+                $book->publication_status === 'published' && $book->commercial_distribution_allowed,
+                422,
+                'Ce livre n’est pas encore disponible à la vente.'
+            );
             $price = $item['format'] === 'physical'
                 ? (int) round($book->price * 1.6)
                 : $book->price;

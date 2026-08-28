@@ -5,12 +5,14 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Traits\EscapesLikeWildcards;
 use App\Models\ContactMessage;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class ContactMessageController extends Controller
 {
+    use EscapesLikeWildcards;
     public function index(Request $request): JsonResponse
     {
         $query = ContactMessage::query();
@@ -20,7 +22,7 @@ class ContactMessageController extends Controller
         }
 
         if ($request->filled('search')) {
-            $search = trim((string) $request->input('search'));
+            $search = $this->escapeLike(trim((string) $request->input('search')));
 
             $query->where(function ($builder) use ($search) {
                 $builder

@@ -1023,3 +1023,72 @@ html[data-theme='dark'] .empty-icon {
     gap: 1rem;
   }
 }
+
+/* Responsive hardening: auth and account modals must remain usable on every
+   viewport, including landscape phones and short laptop screens. */
+.modal-overlay.active:has(.auth-modal-v2) {
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.auth-modal-v2 {
+  max-height: calc(100dvh - 2rem) !important;
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+  overscroll-behavior: contain;
+}
+
+@media (max-height: 760px) and (min-width: 769px) {
+  .modal-overlay.active:has(.auth-modal-v2) { align-items: flex-start; }
+  .auth-visual-side { padding: 1rem 1.25rem; }
+  .auth-brand-logo { width: 48px; height: 48px; margin-bottom: 0.5rem; }
+  .auth-brand-logo img { width: 34px; height: 34px; }
+  .auth-visual-side h2 { font-size: 1.3rem; }
+  .auth-form-side { padding: 1.25rem 1.5rem; }
+  .auth-form-v2 { gap: 0.8rem; }
+}
+
+@media (max-width: 768px) {
+  .modal-overlay.active:has(.auth-modal-v2),
+  .modal-overlay.active:has(.account-modal-premium) {
+    align-items: flex-start;
+    padding: 0.75rem;
+  }
+
+  .auth-modal-v2 {
+    width: 100%;
+    max-height: calc(100dvh - 1.5rem) !important;
+  }
+
+  .auth-visual-side { padding: 1.15rem 3.5rem 1rem 1.1rem; }
+  .auth-brand-logo { width: 46px; height: 46px; margin-bottom: 0.45rem; }
+  .auth-brand-logo img { width: 32px; height: 32px; }
+  .auth-visual-side h2 { font-size: 1.25rem; }
+  .auth-form-side { padding: 1.1rem; }
+  .auth-form-v2 { gap: 0.85rem; }
+  .auth-input-wrapper input { min-height: 48px; font-size: 16px; }
+
+  .account-modal-premium {
+    width: 100%;
+    max-width: 100% !important;
+    max-height: calc(100dvh - 1.5rem) !important;
+    padding: 0.65rem !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .modal-overlay.active:has(.auth-modal-v2),
+  .modal-overlay.active:has(.account-modal-premium) { padding: 0; }
+  .auth-modal-v2,
+  .account-modal-premium {
+    min-height: 100dvh;
+    max-height: 100dvh !important;
+  }
+  .auth-visual-side { padding-block: 0.9rem; }
+  .auth-form-side { padding: 1rem; }
+  .account-dashboard-modern .account-overview-metrics-modern,
+  .account-stats-premium { grid-template-columns: 1fr 1fr; }
+  .order-card-header, .order-card-footer { align-items: flex-start; flex-direction: column; gap: 0.5rem; }
+  .order-item-row-premium { grid-template-columns: 1fr; gap: 0.35rem; }
+  .account-library-grid { grid-template-columns: 1fr; }
+}

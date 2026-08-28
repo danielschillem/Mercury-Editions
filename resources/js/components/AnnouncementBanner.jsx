@@ -5,23 +5,23 @@ const announcements = [
   {
     id: 1,
     iconName: 'library',
-    text: 'Nouveau — « Les Soleils des Indépendances » disponible le 1er Avril 2026',
-    highlight: '1er Avril',
+    text: 'Nouveau catalogue Mercury — 49 œuvres désormais disponibles',
+    highlight: '49 œuvres',
     link: '#catalogue',
   },
   {
     id: 2,
     iconName: 'celebrate',
-    text: 'Lancement — Collection « Voix du Sahel » le 15 Avril 2026',
-    highlight: '15 Avril',
+    text: 'En vedette — « Le Capitaine Ibrahim Traoré a dit »',
+    highlight: 'En vedette',
     link: '#catalogue',
   },
   {
     id: 3,
     iconName: 'pen',
-    text: 'Événement — Rencontre avec les auteurs à Ouagadougou le 20 Avril 2026',
-    highlight: '20 Avril',
-    link: '#auteurs',
+    text: 'À découvrir — « Capitaine Thomas Sankara » et « La force d’oser »',
+    highlight: 'À découvrir',
+    link: '#vedette',
   },
 ];
 

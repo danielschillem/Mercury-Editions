@@ -14,9 +14,9 @@ class AuthorController extends Controller
     public function index(): JsonResponse
     {
         $authors = Author::query()
-            ->whereHas('books', fn ($bookQuery) => $bookQuery->where('publisher', self::PUBLIC_PUBLISHER))
+            ->whereHas('books', fn ($bookQuery) => $bookQuery->where('publisher', self::PUBLIC_PUBLISHER)->published())
             ->withCount([
-                'books' => fn ($bookQuery) => $bookQuery->where('publisher', self::PUBLIC_PUBLISHER),
+                'books' => fn ($bookQuery) => $bookQuery->where('publisher', self::PUBLIC_PUBLISHER)->published(),
             ])
             ->get();
 
@@ -25,12 +25,12 @@ class AuthorController extends Controller
 
     public function show(Author $author): JsonResponse
     {
-        if (! $author->books()->where('publisher', self::PUBLIC_PUBLISHER)->exists()) {
+        if (! $author->books()->where('publisher', self::PUBLIC_PUBLISHER)->published()->exists()) {
             abort(404);
         }
 
         $author->loadCount([
-            'books' => fn ($bookQuery) => $bookQuery->where('publisher', self::PUBLIC_PUBLISHER),
+            'books' => fn ($bookQuery) => $bookQuery->where('publisher', self::PUBLIC_PUBLISHER)->published(),
         ]);
 
         return response()->json($author);

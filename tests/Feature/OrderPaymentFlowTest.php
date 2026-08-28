@@ -62,7 +62,6 @@ class OrderPaymentFlowTest extends TestCase
 
         $paymentResponse = $this->postJson('/api/payments/orange', [
             'phone' => '70123456',
-            'amount' => $total,
             'otp' => '123456',
             'refNumber' => $order['reference'],
             'extTxnId' => 'TEST-' . $order['id'],
@@ -95,4 +94,92 @@ class OrderPaymentFlowTest extends TestCase
             'om_transaction_id' => $transactionId,
         ]);
     }
+
+    public function test_payment_uses_server_side_order_total_not_client_amount(): void
+    {
+        $user = User::factory()->create([
+            'phone' => '70123456',
+            'is_admin' => false,
+        ]);
+
+        $book = Book::create([
+            'title' => 'Amount Tamper Test',
+            'author_name' => 'Auteur Test',
+            'price' => 5000,
+            'category' => 'roman',
+            'rating' => 4.5,
+            'local' => true,
+            'color' => '#1a1a2e',
+            'year' => 2026,
+            'pages' => 200,
+            'publisher' => 'Mercury Editions',
+            'language' => 'Français',
+            'isbn' => '978-2-35926-998-2',
+            'tags' => ['test'],
+            'description' => 'Test pour verifier que le montant est derive cote serveur.',
+            'summary' => 'Resume de test pour la securite du paiement.',
+            'quote' => 'La securite d\'abord.',
+        ]);
+
+        $orderResponse = $this->actingAs($user)->postJson('/api/orders', [
+            'buyer_phone' => '70123456',
+            'items' => [
+                ['book_id' => $book->id, 'format' => 'ebook'],
+            ],
+        ])->assertCreated();
+
+        $order = $orderResponse->json();
+        $serverTotal = (int) $order['total_amount'];
+
+        // Send a TAMPERED amount (much lower than the real order total)
+        $tamperedAmount = 100;
+
+        $paymentResponse = $this->postJson('/api/payments/orange', [
+            'phone' => '70123456',
+            'amount' => $tamperedAmount, // Client sends 100, but order is ~5050
+            'otp' => '123456',
+            'refNumber' => $order['reference'],
+            'extTxnId' => 'TAMPER-' . $order['id'],
+        ]);
+
+        $paymentResponse->assertOk()->assertJsonPath('status', 'success');
+
+        // The cached amount should be the SERVER total, not the client's tampered amount
+        $cachedProof = \Illuminate\Support\Facades\Cache::get('om_payment_confirmation:TAMPER-' . $order['id']);
+        $this->assertNotNull($cachedProof);
+        $this->assertSame($serverTotal, (int) $cachedProof['amount'], 'Cached payment amount should be the server-side order total, not the client-provided amount');
+
+        // The API response should also reflect the server-derived amount
+        $this->assertSame($serverTotal, (int) $paymentResponse->json('amount'));
+    }
+
+    public function test_payment_without_order_reference_requires_client_amount(): void
+    {
+        // When refNumber doesn't match any order, client amount is used as fallback
+        $paymentResponse = $this->postJson('/api/payments/orange', [
+            'phone' => '70123456',
+            'amount' => 3500,
+            'otp' => '123456',
+            'refNumber' => 'UNKNOWN-REF-000',
+            'extTxnId' => 'FALLBACK-001',
+        ]);
+
+        $paymentResponse->assertOk()->assertJsonPath('status', 'success');
+    }
+
+    public function test_payment_fails_without_order_reference_and_without_amount(): void
+    {
+        // When refNumber doesn't match any order AND no amount is provided, should fail
+        $paymentResponse = $this->postJson('/api/payments/orange', [
+            'phone' => '70123456',
+            'otp' => '123456',
+            'refNumber' => 'UNKNOWN-REF-000',
+            'extTxnId' => 'NO-AMOUNT-001',
+        ]);
+
+        $paymentResponse->assertStatus(422)
+            ->assertJsonPath('status', 'error')
+            ->assertJsonPath('errorCode', 'MISSING_AMOUNT');
+    }
 }
+

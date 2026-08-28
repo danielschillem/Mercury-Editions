@@ -32,10 +32,12 @@ export default function ManuscriptSubmissionModal({ onClose }) {
       .then((response) => (response.ok ? response.json() : []))
       .then((data) => {
         if (!Array.isArray(data) || data.length === 0) return;
-        setCollections(data);
-        setForm((prev) => data.some((collection) => collection.slug === prev.collection)
+        const submissionCollections = data.filter((collection) => collection.slug !== 'patrimoines-savoirs-libres');
+        if (submissionCollections.length === 0) return;
+        setCollections(submissionCollections);
+        setForm((prev) => submissionCollections.some((collection) => collection.slug === prev.collection)
           ? prev
-          : { ...prev, collection: data[0].slug });
+          : { ...prev, collection: submissionCollections[0].slug });
       })
       .catch(() => {});
   }, []);

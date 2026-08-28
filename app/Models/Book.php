@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Http\Traits\EscapesLikeWildcards;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -13,6 +14,7 @@ use Illuminate\Database\Eloquent\Casts\Attribute;
 class Book extends Model
 {
     use HasFactory;
+    use EscapesLikeWildcards;
 
     protected $fillable = [
         'author_id',
@@ -22,6 +24,17 @@ class Book extends Model
         'price',
         'category',
         'rating',
+        'is_featured',
+        'publication_status',
+        'rights_status',
+        'commercial_distribution_allowed',
+        'source_url',
+        'license_name',
+        'license_url',
+        'attribution_text',
+        'author_death_year',
+        'rights_notes',
+        'rights_reviewed_at',
         'local',
         'color',
         'cover_image',
@@ -48,6 +61,10 @@ class Book extends Model
         return [
             'price'  => 'integer',
             'rating' => 'float',
+            'is_featured' => 'boolean',
+            'commercial_distribution_allowed' => 'boolean',
+            'author_death_year' => 'integer',
+            'rights_reviewed_at' => 'datetime',
             'local'  => 'boolean',
             'year'   => 'integer',
             'publication_date' => 'date:Y-m-d',
@@ -114,6 +131,7 @@ class Book extends Model
      */
     public function scopeSearch($query, string $term)
     {
+        $term = $this->escapeLike($term);
         return $query->where(function ($q) use ($term) {
             $q->where('title', 'like', "%{$term}%")
               ->orWhere('author_name', 'like', "%{$term}%")
@@ -147,6 +165,16 @@ class Book extends Model
             $q->whereNotNull('ebook_pdf_path')
               ->orWhereNotNull('ebook_epub_path');
         });
+    }
+
+    public function scopePublished($query)
+    {
+        return $query->where('publication_status', 'published');
+    }
+
+    public function scopeCommerciallyAvailable($query)
+    {
+        return $query->published()->where('commercial_distribution_allowed', true);
     }
 
     /**

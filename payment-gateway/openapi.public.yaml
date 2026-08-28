@@ -1,0 +1,794 @@
+openapi: "3.1.0"
+info:
+  title: MynaPay Partner Payment Gateway
+  version: "1.1.0"
+  description: |
+    API publique partenaire pour creer et suivre des paiements mobile money via MynaPay.
+    Pour un lot, creer un paiement independant par beneficiaire avec une cle
+    d'idempotence stable par ligne. Un HTTP 202 indique que la creation a ete
+    traitee ; toujours lire le champ JSON status pour le resultat courant.
+  contact:
+    name: Equipe MynaPay
+servers:
+  - url: https://pay.myna-etoile.com
+    description: Gateway publique. L'environnement sandbox ou production depend de la cle API partenaire.
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: API Key
+      description: Cle API Bearer fournie par MynaPay. A utiliser uniquement cote backend.
+  schemas:
+    Operator:
+      type: string
+      enum: [orange, moov]
+      example: orange
+    PaymentStatus:
+      type: string
+      enum: [pending, success, failed]
+      example: pending
+    ServicePaymentStatus:
+      type: string
+      enum:
+        - created
+        - collection_pending
+        - collection_success
+        - collection_failed
+        - payment_pending
+        - payment_success
+        - payment_failed
+        - success
+        - failed
+      example: collection_pending
+    CreatePaymentRequest:
+      type: object
+      required: [external_reference, operator, phone, amount]
+      properties:
+        client_id:
+          type: string
+          description: Optionnel. Doit correspondre au client lie a la cle API s'il est fourni.
+          example: partner-app
+        external_reference:
+          type: string
+          description: Reference metier unique cote partenaire.
+          example: ORDER-2026-0001
+        operator:
+          $ref: "#/components/schemas/Operator"
+        phone:
+          type: string
+          description: Numero beneficiaire au format 226XXXXXXXX.
+          example: "22670123456"
+        amount:
+          type: integer
+          minimum: 1
+          description: Montant en FCFA.
+          example: 2500
+        label:
+          type: string
+          example: Paiement commande ORDER-2026-0001
+        idempotency_key:
+          type: string
+          description: Cle d'idempotence. Peut aussi etre fournie via le header Idempotency-Key.
+          example: ORDER-2026-0001
+    PaymentResponse:
+      type: object
+      required: [payment_id, client_id, external_reference, operator, status, message]
+      properties:
+        payment_id:
+          type: string
+          format: uuid
+          example: a1b2c3d4-e5f6-7890-abcd-ef1234567890
+        client_id:
+          type: string
+          example: partner-app
+        external_reference:
+          type: string
+          example: ORDER-2026-0001
+        operator:
+          $ref: "#/components/schemas/Operator"
+        operator_ref:
+          type: string
+          example: OM-REF-123456
+        status:
+          $ref: "#/components/schemas/PaymentStatus"
+        message:
+          type: string
+          example: Paiement transmis a l'operateur
+        simulated:
+          type: boolean
+          example: true
+        environment:
+          type: string
+          enum: [sandbox, production]
+          example: sandbox
+    CreateCollectionRequest:
+      type: object
+      required: [external_reference, operator, payer_phone, amount]
+      properties:
+        client_id:
+          type: string
+          description: Optionnel. Doit correspondre au client lie a la cle API s'il est fourni.
+          example: partner-wallet
+        external_reference:
+          type: string
+          example: WALLET-TOPUP-2026-0001
+        operator:
+          $ref: "#/components/schemas/Operator"
+        payer_phone:
+          type: string
+          description: Numero payeur au format 226XXXXXXXX.
+          example: "22670123456"
+        amount:
+          type: integer
+          minimum: 1
+          description: Montant en FCFA.
+          example: 25000
+        fee_amount:
+          type: integer
+          description: Frais client optionnels. Si absent, MynaPay applique la configuration du client.
+          example: 375
+        otp:
+          type: string
+          description: OTP Orange requis pour le parcours Orange OTP.
+          example: "541847"
+        label:
+          type: string
+          example: Recharge wallet
+        idempotency_key:
+          type: string
+          description: Cle d'idempotence. Peut aussi etre fournie via le header Idempotency-Key.
+          example: WALLET-TOPUP-2026-0001
+    CollectionResponse:
+      type: object
+      required: [collection_id, client_id, external_reference, operator, status, amount, fee_amount, net_amount, message]
+      properties:
+        collection_id:
+          type: string
+          format: uuid
+          example: a1b2c3d4-e5f6-7890-abcd-ef1234567890
+        client_id:
+          type: string
+          example: partner-wallet
+        tenant_id:
+          type: string
+          format: uuid
+        external_reference:
+          type: string
+          example: WALLET-TOPUP-2026-0001
+        operator:
+          $ref: "#/components/schemas/Operator"
+        operator_ref:
+          type: string
+          example: OM-COL-123456
+        status:
+          $ref: "#/components/schemas/PaymentStatus"
+        amount:
+          type: integer
+          example: 25000
+        fee_amount:
+          type: integer
+          example: 375
+        net_amount:
+          type: integer
+          example: 24625
+        message:
+          type: string
+          example: Collection transmise a l'operateur
+        simulated:
+          type: boolean
+          example: true
+        environment:
+          type: string
+          enum: [sandbox, production]
+          example: sandbox
+        wallet_credited_at:
+          type: string
+          format: date-time
+    MoovOTPGenerateRequest:
+      type: object
+      required: [external_reference, payer_phone, amount]
+      properties:
+        external_reference:
+          type: string
+          example: WALLET-TOPUP-OTP-2026-0003
+        payer_phone:
+          type: string
+          example: "22670123456"
+        amount:
+          type: integer
+          minimum: 1
+          example: 25000
+        label:
+          type: string
+          example: Recharge wallet OTP Moov
+    MoovOTPGenerateResponse:
+      type: object
+      properties:
+        collection_id:
+          type: string
+          format: uuid
+        trans_id:
+          type: string
+          example: CCP2000LV0
+        status:
+          type: string
+          example: otp_generated
+        message:
+          type: string
+          example: SUCCESS
+    CreateServicePaymentRequest:
+      type: object
+      required: [app_id, external_reference, payer_phone, amount]
+      properties:
+        app_id:
+          type: string
+          format: uuid
+          description: Identifiant application fourni par MynaPay.
+          example: 8b4e8c2e-0f93-4e8e-92b6-4e9b3ad5f701
+        external_reference:
+          type: string
+          example: SERVICE-2026-0001
+        payer_phone:
+          type: string
+          example: "22670123456"
+        amount:
+          type: integer
+          minimum: 1
+          example: 2500
+        otp:
+          type: string
+          description: OTP Orange si requis par la configuration.
+          example: "541847"
+        collection_mode:
+          type: string
+          description: Utiliser moov_otp pour demarrer le parcours OTP Moov.
+          enum: [moov_otp]
+        label:
+          type: string
+          example: Paiement service SERVICE-2026-0001
+        idempotency_key:
+          type: string
+          description: Cle d'idempotence. Peut aussi etre fournie via le header Idempotency-Key.
+          example: SERVICE-2026-0001
+    ServicePaymentResponse:
+      type: object
+      required:
+        - service_payment_id
+        - status
+        - external_reference
+        - amount
+        - customer_fee_amount
+        - operator_fee_ht
+        - operator_tax_amount
+        - operator_fee_ttc
+        - platform_gross_commission
+        - platform_net_commission
+        - amount_to_reverse
+      properties:
+        service_payment_id:
+          type: string
+          format: uuid
+        status:
+          $ref: "#/components/schemas/ServicePaymentStatus"
+        external_reference:
+          type: string
+          example: SERVICE-2026-0001
+        amount:
+          type: integer
+          example: 2500
+        customer_fee_amount:
+          type: integer
+          example: 50
+        operator_fee_ht:
+          type: integer
+          example: 20
+        operator_tax_amount:
+          type: integer
+          example: 3
+        operator_fee_ttc:
+          type: integer
+          example: 23
+        settlement_fee_ht:
+          type: integer
+          example: 20
+        settlement_tax_amount:
+          type: integer
+          example: 3
+        settlement_fee_ttc:
+          type: integer
+          example: 23
+        platform_gross_commission:
+          type: integer
+          example: 27
+        platform_net_commission:
+          type: integer
+          example: 4
+        amount_to_reverse:
+          type: integer
+          example: 2450
+        collection:
+          $ref: "#/components/schemas/CollectionResponse"
+        payment:
+          $ref: "#/components/schemas/PaymentResponse"
+        failure_reason:
+          type: string
+          example: OTP requis pour la collecte Orange
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+          example: idempotency_key requis
+    OperatorsStatusResponse:
+      type: object
+      properties:
+        operators:
+          type: array
+          items:
+            type: object
+            properties:
+              operator:
+                $ref: "#/components/schemas/Operator"
+              configured:
+                type: boolean
+                example: true
+              allowed:
+                type: boolean
+                example: true
+  responses:
+    Unauthorized:
+      description: Cle API absente ou invalide.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    Forbidden:
+      description: Client suspendu, operateur non autorise ou paiement inaccessible.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    TooManyRequests:
+      description: Quota par minute depasse.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+
+paths:
+  /health:
+    get:
+      summary: Health check
+      tags: [System]
+      responses:
+        "200":
+          description: Service disponible.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: ok
+                  service:
+                    type: string
+                    example: payment-gateway
+  /api/v1/payments:
+    post:
+      summary: Creer un paiement
+      description: |
+        Cree un paiement. Il n'existe pas d'endpoint public GET /api/v1/payments
+        pour lister les paiements. Pour un lot, appeler cette route une fois par
+        beneficiaire avec une cle d'idempotence stable par ligne.
+      tags: [Payments]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: Idempotency-Key
+          in: header
+          schema:
+            type: string
+          description: Obligatoire si idempotency_key n'est pas fourni dans le body.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreatePaymentRequest"
+      responses:
+        "202":
+          description: Creation traitee. Lire status dans le JSON ; il peut deja etre success, failed ou pending.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaymentResponse"
+        "200":
+          description: Retour idempotent.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaymentResponse"
+        "400":
+          description: Payload invalide.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "409":
+          description: Cle d'idempotence reutilisee avec un payload different.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+  /api/v1/payments/{payment_id}:
+    get:
+      summary: Consulter un paiement
+      tags: [Payments]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: payment_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Paiement trouve.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaymentResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          description: Paiement introuvable.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /api/v1/payments/{payment_id}/check:
+    post:
+      summary: Verifier le statut d'un paiement
+      description: Pour Orange CashIn, retourne l'etat connu car aucun endpoint operateur de statut separe n'est actuellement exploitable.
+      tags: [Payments]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: payment_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Statut courant.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaymentResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          description: Paiement introuvable.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /api/v1/collections:
+    post:
+      summary: Creer une collecte
+      description: Debite le payeur mobile money et credite le wallet MynaPay lie au client si configure.
+      tags: [Collections]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: Idempotency-Key
+          in: header
+          schema:
+            type: string
+          description: Obligatoire si idempotency_key n'est pas fourni dans le body.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateCollectionRequest"
+      responses:
+        "202":
+          description: Creation traitee. Lire status dans le JSON ; il peut deja etre success, failed ou pending.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CollectionResponse"
+        "200":
+          description: Retour idempotent.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CollectionResponse"
+        "400":
+          description: Payload invalide.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "409":
+          description: Cle d'idempotence reutilisee avec un payload different.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+  /api/v1/collections/{collection_id}:
+    get:
+      summary: Consulter une collecte
+      tags: [Collections]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: collection_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Collecte trouvee.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CollectionResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          description: Collecte introuvable.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /api/v1/collections/{collection_id}/check:
+    post:
+      summary: Verifier le statut d'une collecte
+      tags: [Collections]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: collection_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Statut courant.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CollectionResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          description: Collecte introuvable.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /api/v1/moov/otp/generate:
+    post:
+      summary: Generer un OTP Moov
+      tags: [Collections]
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MoovOTPGenerateRequest"
+      responses:
+        "202":
+          description: OTP genere.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MoovOTPGenerateResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+  /api/v1/moov/otp/resend:
+    post:
+      summary: Renvoyer un OTP Moov
+      tags: [Collections]
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [collection_id]
+              properties:
+                collection_id:
+                  type: string
+                  format: uuid
+      responses:
+        "200":
+          description: OTP renvoye.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  trans_id:
+                    type: string
+                  status:
+                    type: string
+                  message:
+                    type: string
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+  /api/v1/collections/{collection_id}/otp/commit:
+    post:
+      summary: Valider une collecte Moov OTP
+      tags: [Collections]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: collection_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [otp]
+              properties:
+                otp:
+                  type: string
+                  example: "041071"
+      responses:
+        "202":
+          description: Collecte validee ou en cours.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CollectionResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+  /api/v1/service-payments:
+    post:
+      summary: Executer un flow d'application externe
+      description: Execute le flow metier associe a un app_id configure par MynaPay.
+      tags: [ServicePayments]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: Idempotency-Key
+          in: header
+          schema:
+            type: string
+          description: Cle d'idempotence alternative au champ body.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateServicePaymentRequest"
+      responses:
+        "202":
+          description: Flow cree et execute.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ServicePaymentResponse"
+        "200":
+          description: Retour idempotent.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ServicePaymentResponse"
+        "400":
+          description: Payload invalide ou configuration incompatible.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          description: Configuration application introuvable.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+  /api/v1/service-payments/{service_payment_id}:
+    get:
+      summary: Consulter un service payment
+      tags: [ServicePayments]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: service_payment_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Service payment trouve.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ServicePaymentResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          description: Service payment introuvable.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /api/v1/operators/status:
+    get:
+      summary: Operateurs disponibles
+      tags: [Operators]
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: Statut des operateurs.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OperatorsStatusResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"

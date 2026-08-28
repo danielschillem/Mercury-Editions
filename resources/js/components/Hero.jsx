@@ -2,7 +2,13 @@ import { useApp } from '../context/AppContext';
 import Icon from './Icons';
 
 export default function Hero() {
-  const { openModal } = useApp();
+  const { books, openModal } = useApp();
+
+  const featuredBooks = books
+    .filter(book => book.is_featured)
+    .slice()
+    .sort((a, b) => Number(b.rating) - Number(a.rating))
+    .slice(0, 3);
 
   const scrollToSection = (sectionId) => {
     const section = document.getElementById(sectionId);
@@ -44,17 +50,13 @@ export default function Hero() {
         </div>
         <div className="hero-books">
           <div className="hero-book-stack">
-            {[
-              { id: 13, tag: 'Leadership', title: 'Le Capitaine Ibrahim Traoré a dit', author: 'Ibrahim Traoré', cover: '/images/covers/mercury/le-capitaine-ibrahim-traoré-à-dit.png' },
-              { id: 14, tag: 'Biographie', title: 'Capitaine Thomas Sankara', author: 'Thomas Sankara', cover: '/images/covers/mercury/capitaine-thomas-sankara-à-la-découverte-dun-leader-charismatique.png' },
-              { id: 16, tag: 'Inspiration', title: 'La Force d\'oser', author: 'Mariam V. Touré', cover: '/images/covers/mercury/la-force-doser.png' },
-            ].map(b => (
+            {featuredBooks.map(b => (
               <div key={b.id} className="hero-book" onClick={() => openModal('bookDetail', b.id)} style={{ cursor: 'pointer' }}>
                 <div className="hero-book-inner">
-                  {b.cover && <img src={b.cover} alt={b.title} className="hero-book-cover" onError={(e) => { e.target.onerror = null; e.target.src = '/images/covers/placeholder.svg'; }} />}
-                  <div className="hero-book-tag">{b.tag}</div>
+                  {b.cover_image && <img src={b.cover_image} alt={b.title} className="hero-book-cover" onError={(e) => { e.target.onerror = null; e.target.src = '/images/covers/placeholder.svg'; }} />}
+                  <div className="hero-book-tag">{b.category}</div>
                   <div className="hero-book-title">{b.title}</div>
-                  <div className="hero-book-author">{b.author}</div>
+                  <div className="hero-book-author">{b.author_name}</div>
                 </div>
               </div>
             ))}

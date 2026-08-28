@@ -1,0 +1,267 @@
+{
+  "info": {
+    "name": "MynaPay Partner Payment Gateway",
+    "description": "Collection publique partenaire pour tester la Payment Gateway MynaPay.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{api_key}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "https://pay.myna-etoile.com"
+    },
+    {
+      "key": "api_key",
+      "value": "replace_with_mynapay_gateway_api_key"
+    },
+    {
+      "key": "payment_id",
+      "value": "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+    },
+    {
+      "key": "collection_id",
+      "value": "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+    },
+    {
+      "key": "service_payment_id",
+      "value": "9de3092a-6452-4326-b80d-9ee91f6066a9"
+    },
+    {
+      "key": "app_id",
+      "value": "8b4e8c2e-0f93-4e8e-92b6-4e9b3ad5f701"
+    },
+    {
+      "key": "external_reference",
+      "value": "ORDER-2026-0001"
+    }
+  ],
+  "item": [
+    {
+      "name": "Health",
+      "request": {
+        "auth": {
+          "type": "noauth"
+        },
+        "method": "GET",
+        "url": {
+          "raw": "{{base_url}}/health",
+          "host": ["{{base_url}}"],
+          "path": ["health"]
+        }
+      }
+    },
+    {
+      "name": "Operators Status",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{base_url}}/api/v1/operators/status",
+          "host": ["{{base_url}}"],
+          "path": ["api", "v1", "operators", "status"]
+        }
+      }
+    },
+    {
+      "name": "Create Payment",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Idempotency-Key",
+            "value": "{{external_reference}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"external_reference\": \"{{external_reference}}\",\n  \"operator\": \"orange\",\n  \"phone\": \"22670123456\",\n  \"amount\": 2500,\n  \"label\": \"Paiement commande {{external_reference}}\",\n  \"idempotency_key\": \"{{external_reference}}\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/api/v1/payments",
+          "host": ["{{base_url}}"],
+          "path": ["api", "v1", "payments"]
+        }
+      }
+    },
+    {
+      "name": "Get Payment",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{base_url}}/api/v1/payments/{{payment_id}}",
+          "host": ["{{base_url}}"],
+          "path": ["api", "v1", "payments", "{{payment_id}}"]
+        }
+      }
+    },
+    {
+      "name": "Check Payment Status",
+      "request": {
+        "method": "POST",
+        "url": {
+          "raw": "{{base_url}}/api/v1/payments/{{payment_id}}/check",
+          "host": ["{{base_url}}"],
+          "path": ["api", "v1", "payments", "{{payment_id}}", "check"]
+        }
+      }
+    },
+    {
+      "name": "Create Collection",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Idempotency-Key",
+            "value": "WALLET-TOPUP-2026-0001"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"external_reference\": \"WALLET-TOPUP-2026-0001\",\n  \"operator\": \"orange\",\n  \"payer_phone\": \"22670123456\",\n  \"amount\": 25000,\n  \"fee_amount\": 375,\n  \"otp\": \"541847\",\n  \"label\": \"Recharge wallet\",\n  \"idempotency_key\": \"WALLET-TOPUP-2026-0001\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/api/v1/collections",
+          "host": ["{{base_url}}"],
+          "path": ["api", "v1", "collections"]
+        }
+      }
+    },
+    {
+      "name": "Get Collection",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{base_url}}/api/v1/collections/{{collection_id}}",
+          "host": ["{{base_url}}"],
+          "path": ["api", "v1", "collections", "{{collection_id}}"]
+        }
+      }
+    },
+    {
+      "name": "Check Collection Status",
+      "request": {
+        "method": "POST",
+        "url": {
+          "raw": "{{base_url}}/api/v1/collections/{{collection_id}}/check",
+          "host": ["{{base_url}}"],
+          "path": ["api", "v1", "collections", "{{collection_id}}", "check"]
+        }
+      }
+    },
+    {
+      "name": "Generate Moov OTP",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"external_reference\": \"WALLET-TOPUP-OTP-2026-0003\",\n  \"payer_phone\": \"22670123456\",\n  \"amount\": 25000,\n  \"label\": \"Recharge wallet OTP Moov\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/api/v1/moov/otp/generate",
+          "host": ["{{base_url}}"],
+          "path": ["api", "v1", "moov", "otp", "generate"]
+        }
+      }
+    },
+    {
+      "name": "Resend Moov OTP",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"collection_id\": \"{{collection_id}}\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/api/v1/moov/otp/resend",
+          "host": ["{{base_url}}"],
+          "path": ["api", "v1", "moov", "otp", "resend"]
+        }
+      }
+    },
+    {
+      "name": "Commit Moov OTP Collection",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"otp\": \"041071\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/api/v1/collections/{{collection_id}}/otp/commit",
+          "host": ["{{base_url}}"],
+          "path": ["api", "v1", "collections", "{{collection_id}}", "otp", "commit"]
+        }
+      }
+    },
+    {
+      "name": "Create Service Payment",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Idempotency-Key",
+            "value": "SERVICE-2026-0001"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"app_id\": \"{{app_id}}\",\n  \"external_reference\": \"SERVICE-2026-0001\",\n  \"payer_phone\": \"22670123456\",\n  \"amount\": 2500,\n  \"otp\": \"541847\",\n  \"label\": \"Paiement service SERVICE-2026-0001\",\n  \"idempotency_key\": \"SERVICE-2026-0001\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/api/v1/service-payments",
+          "host": ["{{base_url}}"],
+          "path": ["api", "v1", "service-payments"]
+        }
+      }
+    },
+    {
+      "name": "Get Service Payment",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{base_url}}/api/v1/service-payments/{{service_payment_id}}",
+          "host": ["{{base_url}}"],
+          "path": ["api", "v1", "service-payments", "{{service_payment_id}}"]
+        }
+      }
+    }
+  ]
+}

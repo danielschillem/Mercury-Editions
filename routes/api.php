@@ -39,6 +39,8 @@ Route::middleware('auth')->group(function () {
 
 // Paiement Orange Money
 Route::post('/payments/orange', [PaymentController::class, 'processOrangeMoney'])->middleware('throttle:10,1');
+Route::post('/payments/orange/{collectionId}/check', [PaymentController::class, 'checkOrangeMoney'])
+    ->whereUuid('collectionId')->middleware('throttle:20,1');
 
 // Newsletter
 Route::post('/newsletter/subscribe', [NewsletterController::class, 'subscribe'])->middleware('throttle:5,1');

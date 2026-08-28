@@ -18,6 +18,12 @@ const fallbackCollections = [
     description: 'Albums, contes, manuels et textes courts pour accompagner les jeunes lecteurs, les familles et les écoles.',
     icon: 'graduation',
   },
+  {
+    name: 'Mercury Patrimoines & Savoirs libres',
+    slug: 'patrimoines-savoirs-libres',
+    description: 'Classiques, patrimoines et ressources sous licence ouverte, sélectionnés, vérifiés et édités par Mercury.',
+    icon: 'scroll',
+  },
 ];
 
 const editorialSteps = [
@@ -66,8 +72,8 @@ export default function PublishingHouse() {
           <div className="publishing-panel-kicker">Notre rôle</div>
           <div className="publishing-proof-grid">
             <div>
-              <strong>3</strong>
-              <span>collections fondatrices</span>
+              <strong>{collections.length}</strong>
+              <span>collections éditoriales</span>
             </div>
             <div>
               <strong>5</strong>

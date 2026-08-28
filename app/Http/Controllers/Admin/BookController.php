@@ -9,9 +9,34 @@ use App\Models\Book;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\ValidationException;
 
 class BookController extends Controller
 {
+    private function ensureRightsPermitDistribution(array $validated, ?Book $book = null): void
+    {
+        $publicationStatus = $validated['publication_status'] ?? $book?->publication_status ?? 'draft';
+        $rightsStatus = $validated['rights_status'] ?? $book?->rights_status ?? 'contracted';
+        $commercialAllowed = $validated['commercial_distribution_allowed']
+            ?? $book?->commercial_distribution_allowed
+            ?? false;
+        $sourceUrl = $validated['source_url'] ?? $book?->source_url;
+
+        $clearedStatuses = ['contracted', 'public_domain_cleared', 'open_license'];
+
+        if (($publicationStatus === 'published' || $commercialAllowed) && ! in_array($rightsStatus, $clearedStatuses, true)) {
+            throw ValidationException::withMessages([
+                'rights_status' => 'La publication et la vente exigent des droits préalablement validés.',
+            ]);
+        }
+
+        if ($rightsStatus !== 'contracted' && empty($sourceUrl)) {
+            throw ValidationException::withMessages([
+                'source_url' => 'La source du texte est obligatoire pour une œuvre patrimoniale ou sous licence ouverte.',
+            ]);
+        }
+    }
+
     private function persistUploads(Request $request, array &$validated): void
     {
         if ($request->hasFile('cover_upload')) {
@@ -42,6 +67,17 @@ class BookController extends Controller
             'price'       => ['required', 'integer', 'min:0'],
             'category'    => ['required', 'string', 'max:30'],
             'rating'      => ['required', 'numeric', 'min:0', 'max:5'],
+            'is_featured' => ['boolean'],
+            'publication_status' => ['sometimes', 'in:draft,legal_review,published,archived'],
+            'rights_status' => ['sometimes', 'in:contracted,public_domain_review,public_domain_cleared,open_license,restricted'],
+            'commercial_distribution_allowed' => ['boolean'],
+            'source_url' => ['nullable', 'url', 'max:1000'],
+            'license_name' => ['nullable', 'string', 'max:120'],
+            'license_url' => ['nullable', 'url', 'max:1000'],
+            'attribution_text' => ['nullable', 'string', 'max:5000'],
+            'author_death_year' => ['nullable', 'integer', 'min:1', 'max:2100'],
+            'rights_notes' => ['nullable', 'string', 'max:10000'],
+            'rights_reviewed_at' => ['nullable', 'date'],
             'local'       => ['boolean'],
             'color'       => ['required', 'string', 'max:20'],
             'cover_image' => ['nullable', 'string', 'max:255'],
@@ -61,6 +97,8 @@ class BookController extends Controller
             'public_excerpt' => ['nullable', 'string', 'max:12000'],
             'quote'       => ['required', 'string'],
         ]);
+
+        $this->ensureRightsPermitDistribution($validated);
 
         $this->persistUploads($request, $validated);
 
@@ -87,6 +125,17 @@ class BookController extends Controller
             'price'       => ['sometimes', 'integer', 'min:0'],
             'category'    => ['sometimes', 'string', 'max:30'],
             'rating'      => ['sometimes', 'numeric', 'min:0', 'max:5'],
+            'is_featured' => ['boolean'],
+            'publication_status' => ['sometimes', 'in:draft,legal_review,published,archived'],
+            'rights_status' => ['sometimes', 'in:contracted,public_domain_review,public_domain_cleared,open_license,restricted'],
+            'commercial_distribution_allowed' => ['boolean'],
+            'source_url' => ['nullable', 'url', 'max:1000'],
+            'license_name' => ['nullable', 'string', 'max:120'],
+            'license_url' => ['nullable', 'url', 'max:1000'],
+            'attribution_text' => ['nullable', 'string', 'max:5000'],
+            'author_death_year' => ['nullable', 'integer', 'min:1', 'max:2100'],
+            'rights_notes' => ['nullable', 'string', 'max:10000'],
+            'rights_reviewed_at' => ['nullable', 'date'],
             'local'       => ['boolean'],
             'color'       => ['sometimes', 'string', 'max:20'],
             'cover_image' => ['nullable', 'string', 'max:255'],
@@ -106,6 +155,8 @@ class BookController extends Controller
             'public_excerpt' => ['nullable', 'string', 'max:12000'],
             'quote'       => ['sometimes', 'string'],
         ]);
+
+        $this->ensureRightsPermitDistribution($validated, $book);
 
         $this->persistUploads($request, $validated);
 

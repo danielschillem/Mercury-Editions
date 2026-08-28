@@ -8015,3 +8015,175 @@ nav.scrolled .nav-login-btn:hover { background: rgba(255,255,255,0.25); }
 .account-modal-premium .account-reading-queue-list button:hover {
   transform: none !important;
 }
+
+/* ═══════════ PLATFORM RESPONSIVE SYSTEM ═══════════ */
+body { overflow-x: hidden; }
+img, svg, video, canvas { max-width: 100%; }
+button, input, select, textarea { max-width: 100%; }
+.inner, .nav-inner, .footer-inner, .announcement-inner {
+  width: min(100% - 3rem, 1400px);
+  margin-inline: auto;
+}
+
+@media (max-width: 1024px) {
+  .nav-inner { width: calc(100% - 2rem); }
+  .nav-links { gap: 1rem; }
+  .nav-links a { font-size: 0.82rem; }
+  .hero-content { grid-template-columns: minmax(0, 1fr) minmax(300px, 0.8fr); gap: 2rem; }
+  .featured-books-grid, .featured-authors-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .books-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .detail-hero { grid-template-columns: minmax(220px, 0.65fr) minmax(0, 1.35fr); }
+  .editorial-steps { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 768px) {
+  :root { scroll-padding-top: 76px; }
+  .inner, .nav-inner, .footer-inner, .announcement-inner { width: calc(100% - 2rem); }
+  section { scroll-margin-top: 76px; }
+
+  nav { min-height: 64px; }
+  .nav-inner { min-height: 64px; gap: 0.5rem; }
+  .nav-logo-img { max-height: 46px; max-width: 132px; }
+  .nav-links {
+    position: fixed;
+    inset: 64px 0 auto 0;
+    width: 100%;
+    max-height: calc(100dvh - 64px);
+    overflow-y: auto;
+    display: none;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0;
+    padding: 0.75rem 1rem 1rem;
+    background: var(--cream);
+    border-top: 1px solid rgba(0,0,0,0.08);
+    box-shadow: 0 16px 32px rgba(0,0,0,0.14);
+    z-index: 2600;
+  }
+  .nav-links.mobile-open { display: flex; }
+  .nav-links li, .nav-links a { width: 100%; }
+  .nav-links a { display: block; padding: 0.85rem 0.5rem; font-size: 0.95rem; }
+  .mobile-menu-btn { display: inline-flex; }
+  .nav-account-name, .nav-login-btn span { display: none; }
+  .nav-login-btn, .nav-account-btn, .nav-cart, .nav-util-btn, .mobile-menu-btn {
+    min-width: 42px; min-height: 42px; justify-content: center;
+  }
+
+  .announcement-inner { gap: 0.5rem; }
+  .announcement-content { min-width: 0; }
+  .announcement-text { white-space: normal; line-height: 1.3; }
+  .announcement-controls { flex-shrink: 0; }
+
+  .hero { min-height: auto; padding-block: 5.5rem 3rem; }
+  .hero-content { width: 100%; min-width: 0; grid-template-columns: minmax(0, 1fr); text-align: center; gap: 2.25rem; }
+  .hero-text { width: 100%; min-width: 0; max-width: 680px; margin-inline: auto; }
+  .hero h1, .hero-desc { max-width: 100%; overflow-wrap: anywhere; }
+  .hero-actions, .hero-stats { justify-content: center; flex-wrap: wrap; }
+  .hero-books { width: min(100%, 430px); min-width: 0; margin-inline: auto; min-height: 330px; }
+  .hero-book-stack { width: min(320px, calc(100vw - 3rem)); }
+  .hero-book { transform-origin: center bottom; }
+
+  .featured-books-grid, .featured-authors-grid, .books-grid,
+  .authors-grid, .payment-methods, .footer-inner {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .latest-carousel { padding-inline: 0; }
+  .latest-track { scroll-padding-inline: 1rem; }
+  .latest-card { min-width: min(78vw, 310px); }
+
+  .catalogue-search-bar { align-items: stretch; }
+  .catalogue-sort, .catalogue-sort select { width: 100%; }
+  .catalogue-filters { overflow-x: auto; flex-wrap: nowrap; justify-content: flex-start; padding-bottom: 0.5rem; }
+  .catalogue-filters button { flex: 0 0 auto; }
+
+  .modal-overlay, .checkout-overlay { align-items: flex-start; padding: 0.75rem; overflow-y: auto; }
+  .modal-content, .checkout-modal, .contact-modal, .manuscript-modal,
+  .book-detail-modal, .author-profile-modal {
+    width: 100%;
+    max-width: 100%;
+    max-height: calc(100dvh - 1.5rem);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+  .modal-close, .detail-close-btn, .ap-close { min-width: 44px; min-height: 44px; }
+  .detail-hero, .detail-body, .ap-hero, .ap-body { grid-template-columns: 1fr; }
+  .detail-book-visual { max-width: 260px; margin-inline: auto; }
+  .detail-meta-grid, .ap-stats-row, .ap-biblio-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .detail-actions, .detail-secondary-actions { flex-wrap: wrap; }
+  .detail-actions > *, .detail-secondary-actions > * { flex: 1 1 180px; }
+  .detail-tabs { overflow-x: auto; flex-wrap: nowrap; justify-content: flex-start; }
+  .detail-tabs button { white-space: nowrap; }
+
+  .checkout-header { padding: 1.5rem 3.5rem 1.25rem 1.25rem; }
+  .checkout-body { padding: 1.25rem; }
+  .checkout-methods, .contact-form-row { grid-template-columns: 1fr; }
+  .checkout-context-card, .checkout-customer-card { align-items: flex-start; }
+  .otp-input-group { gap: 0.4rem; justify-content: center; }
+  .otp-input-group input { width: clamp(38px, 11vw, 52px); height: clamp(46px, 13vw, 58px); font-size: 1.2rem; }
+
+  .cart-panel { width: min(100%, 440px); height: 100dvh; }
+  .cart-header, .cart-footer { padding: 1.1rem; }
+  .cart-items { padding: 1rem; }
+
+  .reader-layout, .reader-main { min-width: 0; }
+  .reader-sidebar { width: min(88vw, 320px); }
+  .reader-toolbar { overflow-x: auto; justify-content: flex-start; }
+  .reader-toolbar > * { flex-shrink: 0; }
+  .editorial-steps { grid-template-columns: 1fr; }
+  .newsletter-form { width: 100%; }
+}
+
+@media (max-width: 480px) {
+  .inner, .nav-inner, .footer-inner, .announcement-inner { width: calc(100% - 1.25rem); }
+  .nav-util-btn { display: none; }
+  .nav-logo-img { max-width: 80px; max-height: 40px; }
+  .nav-inner > div:last-child { flex-shrink: 0; }
+  .nav-inner > div:last-child { gap: 0.3rem !important; }
+  .nav-login-btn, .nav-account-btn, .nav-cart, .nav-util-btn, .mobile-menu-btn { min-width: 38px; min-height: 38px; padding: 0.45rem; }
+  .announcement-icon, .announcement-dots { display: none; }
+
+  .hero { padding-top: 4.5rem; }
+  .hero-actions { flex-direction: column; align-items: stretch; }
+  .hero-actions .btn { width: 100%; }
+  .hero-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.5rem; }
+  .hero-books { min-height: 270px; transform: scale(0.88); margin-block: -1rem; }
+
+  .featured-books-grid, .featured-authors-grid, .books-grid,
+  .authors-grid, .payment-methods, .footer-inner { grid-template-columns: 1fr; }
+  .book-card, .author-card { width: 100%; max-width: 360px; margin-inline: auto; }
+  .section-header { align-items: flex-start; text-align: left; }
+
+  .modal-overlay, .checkout-overlay { padding: 0; }
+  .modal-content, .checkout-modal, .contact-modal, .manuscript-modal,
+  .book-detail-modal, .author-profile-modal {
+    min-height: 100dvh;
+    max-height: 100dvh;
+    border-radius: 0;
+  }
+  .detail-hero, .detail-body, .ap-hero, .ap-body, .contact-form, .manuscript-modal { padding: 1rem; }
+  .detail-meta-grid, .ap-stats-row, .ap-biblio-grid { grid-template-columns: 1fr; }
+  .checkout-header { padding-block: 1.1rem; }
+  .checkout-body { padding: 1rem; }
+  .checkout-context-card, .checkout-customer-card { flex-direction: column; }
+  .checkout-pay-btn, .checkout-back-btn, .checkout-cancel { min-height: 48px; }
+
+  .cart-panel { width: 100vw; }
+  .cart-item { gap: 0.75rem; padding: 0.8rem; }
+  .cart-item-cover { width: 48px; height: 68px; }
+  .cart-total-amount { font-size: 1.4rem; }
+  .catalogue-pagination { overflow-x: auto; justify-content: flex-start; flex-wrap: nowrap; }
+  .pagination-btn, .pagination-page { flex-shrink: 0; }
+  .footer-bottom, .footer-bottom-links { flex-direction: column; align-items: flex-start; gap: 0.75rem; }
+}
+
+@media (max-width: 600px) {
+  .nav-util-btn { display: none; }
+  .nav-logo-img { max-width: 80px; }
+  .hero-content { padding-inline: 1rem; overflow: hidden; }
+}
+
+@media (max-height: 700px) {
+  .modal-overlay, .checkout-overlay { align-items: flex-start; overflow-y: auto; padding-block: 0.5rem; }
+  .modal-content, .checkout-modal { max-height: calc(100dvh - 1rem); }
+  .checkout-header { padding-block: 1rem; }
+}

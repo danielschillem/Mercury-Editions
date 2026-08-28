@@ -258,7 +258,42 @@ export default function Checkout() {
         body: JSON.stringify({ phone, amount: total, otp: otpValue, refNumber, extTxnId }),
       });
 
-      const data = await response.json();
+      let data = await response.json();
+
+      // MynaPay peut accepter la collecte avant d'obtenir la confirmation
+      // opérateur. La commande reste pending tant que le statut n'est pas final.
+      if (response.ok && data.status === 'pending' && data.collectionId) {
+        addLog('Paiement reçu par MynaPay, confirmation opérateur en attente...', 'warn');
+        for (let attempt = 0; attempt < 5 && data.status === 'pending'; attempt++) {
+          await delay(2000);
+          const checkResponse = await fetch(
+            `${OM_CONFIG.paymentEndpoint}/${encodeURIComponent(data.collectionId)}/check`,
+            {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+              credentials: 'include',
+              body: JSON.stringify({ refNumber, extTxnId }),
+            },
+          );
+          data = await checkResponse.json().catch(() => ({
+            status: 'error', errorCode: String(checkResponse.status), message: 'Vérification du paiement impossible.',
+          }));
+          if (!checkResponse.ok && data.status !== 'pending') break;
+        }
+      }
+
+      if (data.status === 'pending') {
+        addLog('Confirmation toujours en attente. La commande reste ouverte.', 'warn');
+        setResult({
+          type: 'partial',
+          data: {
+            amount: Number(data.amount || total), phone: data.phone || phone, refNumber, extTxnId,
+            date: new Date().toLocaleString('fr-FR'),
+            message: 'Paiement en cours de confirmation chez l’opérateur. Ne recommencez pas la transaction ; contactez le support avec la référence de commande.',
+          },
+        });
+        return;
+      }
 
       if (!response.ok || data.status !== 'success') {
         const errCode = data?.errorCode || String(response.status || '90001');

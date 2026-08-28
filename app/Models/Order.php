@@ -4,11 +4,13 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Http\Traits\EscapesLikeWildcards;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Order extends Model
 {
+    use EscapesLikeWildcards;
     protected $fillable = [
         'reference',
         'user_id',
@@ -82,6 +84,7 @@ class Order extends Model
      */
     public function scopeSearch($query, string $term)
     {
+        $term = $this->escapeLike($term);
         return $query->where(function ($q) use ($term) {
             $q->where('reference', 'like', "%{$term}%")
               ->orWhere('buyer_phone', 'like', "%{$term}%")

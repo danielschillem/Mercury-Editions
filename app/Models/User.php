@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Http\Traits\EscapesLikeWildcards;
 use Illuminate\Auth\MustVerifyEmail;
 use Illuminate\Contracts\Auth\MustVerifyEmail as MustVerifyEmailContract;
 use Database\Factories\UserFactory;
@@ -16,7 +17,7 @@ use Illuminate\Notifications\Notifiable;
 class User extends Authenticatable implements MustVerifyEmailContract
 {
     /** @use HasFactory<UserFactory> */
-    use HasFactory, MustVerifyEmail, Notifiable;
+    use HasFactory, MustVerifyEmail, Notifiable, EscapesLikeWildcards;
 
     protected function casts(): array
     {
@@ -74,6 +75,7 @@ class User extends Authenticatable implements MustVerifyEmailContract
      */
     public function scopeSearch($query, string $term)
     {
+        $term = $this->escapeLike($term);
         return $query->where(function ($q) use ($term) {
             $q->where('name', 'like', "%{$term}%")
               ->orWhere('email', 'like', "%{$term}%")

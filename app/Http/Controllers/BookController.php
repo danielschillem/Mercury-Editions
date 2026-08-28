@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
+use App\Http\Traits\EscapesLikeWildcards;
 use App\Models\Book;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -12,6 +13,7 @@ use Illuminate\Support\Facades\DB;
 
 class BookController extends Controller
 {
+    use EscapesLikeWildcards;
     private const PUBLIC_PUBLISHER = 'Mercury Editions';
 
     public function index(Request $request): JsonResponse
@@ -19,6 +21,7 @@ class BookController extends Controller
         $query = Book::query()
             ->with('editorialCollection:id,name,slug,color')
             ->where('publisher', self::PUBLIC_PUBLISHER)
+            ->published()
             ->orderByDesc('year')
             ->orderByDesc('id');
 
@@ -27,7 +30,7 @@ class BookController extends Controller
         }
 
         if ($request->filled('search')) {
-            $search = trim((string) $request->input('search'));
+            $search = $this->escapeLike(trim((string) $request->input('search')));
             $query->where(function ($q) use ($search) {
                 $q->where('title', 'like', "%{$search}%")
                   ->orWhere('author_name', 'like', "%{$search}%")
@@ -54,7 +57,7 @@ class BookController extends Controller
         }
 
         $books = $query->get();
-        $books->each->makeHidden(['ebook_pdf_path', 'ebook_epub_path']);
+        $books->each->makeHidden(['ebook_pdf_path', 'ebook_epub_path', 'rights_notes']);
 
         if (! Schema::hasTable('book_reviews')) {
             $books->transform(function (Book $book) {
@@ -70,12 +73,12 @@ class BookController extends Controller
 
     public function show(Book $book): JsonResponse
     {
-        if ($book->publisher !== self::PUBLIC_PUBLISHER) {
+        if ($book->publisher !== self::PUBLIC_PUBLISHER || $book->publication_status !== 'published') {
             abort(404);
         }
 
         $book->load(['author', 'editorialCollection:id,name,slug,color']);
-        $book->makeHidden(['ebook_pdf_path', 'ebook_epub_path']);
+        $book->makeHidden(['ebook_pdf_path', 'ebook_epub_path', 'rights_notes']);
 
         if (Schema::hasTable('book_reviews')) {
             $book->load([

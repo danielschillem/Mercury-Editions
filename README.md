@@ -39,7 +39,7 @@
 
 **Mercury Editions** est une application web SPA (Single Page Application) pour une maison d'édition numérique spécialisée dans la littérature burkinabè. Elle permet de publier, découvrir, acheter et lire des œuvres d'auteurs du Burkina Faso via un paiement mobile Orange Money.
 
-Le projet valorise le patrimoine littéraire local en proposant un catalogue de **12 œuvres** de **6 auteurs** emblématiques couvrant les genres : roman, poésie, essai, conte et littérature jeunesse.
+Le projet valorise le patrimoine littéraire local en proposant un catalogue de **49 œuvres** de **47 auteurs et collectifs** couvrant les genres : roman, poésie, essai, conte et littérature jeunesse.
 
 ### Auteurs mis en avant
 
@@ -62,8 +62,8 @@ Le MVP livre les fonctionnalités essentielles pour une mise en ligne fonctionne
 
 | # | Fonctionnalité | Statut |
 |---|----------------|--------|
-| 1 | Catalogue de 11 livres avec recherche et filtrage par catégorie | Livré |
-| 2 | Fiches 10 auteurs détaillées (bio, chronologie, distinctions) | Livré |
+| 1 | Catalogue de 49 livres avec recherche et filtrage par catégorie | Livré |
+| 2 | Fiches de 47 auteurs et collectifs, dont 10 biographies enrichies | Livré |
 | 3 | Fiche livre complète (description, résumé, citation, specs) | Livré |
 | 4 | Panier d'achat persistant (localStorage) | Livré |
 | 5 | Paiement Orange Money avec OTP (mode simulation + production) | Livré |
@@ -413,7 +413,7 @@ La roadmap produit ci-dessous couvre l'application. La transformation éditorial
 - [ ] Reporting auteur, droits et diffusion partenaires
 
 ### v1.0.0 — MVP (18 mars 2026)
-- [x] Catalogue de 11 livres avec recherche full-text et filtrage par catégorie
+- [x] Catalogue de 49 livres avec recherche full-text et filtrage par catégorie
 - [x] 10 profils auteurs détaillés (bio, chronologie, distinctions)
 - [x] Panier d'achat (localStorage + sync serveur)
 - [x] Paiement Orange Money (simulation + production)
