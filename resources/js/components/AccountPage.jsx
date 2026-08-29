@@ -397,6 +397,34 @@ export default function AccountPage({ onClose, initialTab = 'overview' }) {
         <button className="modal-close" onClick={onClose}><Icon name="close" size={18} /></button>
 
         <div className="account-shell">
+          <aside className="member-sidebar">
+            <div className="member-brand"><span>M</span><div><strong>Mercury</strong><small>Espace lecteur</small></div></div>
+            <div className="member-identity">
+              <div className="member-avatar">{user?.name?.charAt(0)?.toUpperCase() || 'U'}</div>
+              <div><strong>{user?.name}</strong><span>{user?.email}</span></div>
+            </div>
+            <nav className="member-nav" aria-label="Navigation de votre espace">
+              {[
+                ['overview', 'newspaper', 'Accueil'],
+                ['library', 'library', 'Ma bibliothèque'],
+                ['orders', 'cart', 'Mes commandes'],
+                ['community', 'users', 'Club de lecture'],
+                ['profile', 'user', 'Réglages du compte'],
+              ].map(([key, icon, label]) => (
+                <button key={key} className={tab === key ? 'active' : ''} onClick={() => setTab(key)}>
+                  <Icon name={icon} size={17} /><span>{label}</span>{key === 'library' && libraryItems.length > 0 && <b>{libraryItems.length}</b>}
+                </button>
+              ))}
+            </nav>
+            <div className="member-reading-card">
+              <span>Lecture en cours</span>
+              <strong>{lastReading?.book?.title || featuredLibraryItem?.book?.title || 'Votre prochaine lecture'}</strong>
+              <small>{booksInProgressCount > 0 ? `${booksInProgressCount} ouvrage${booksInProgressCount > 1 ? 's' : ''} en cours` : 'Explorez votre bibliothèque'}</small>
+              <button onClick={() => quickReadBookId ? openReader(quickReadBookId) : setTab('library')}><Icon name="play" size={13} /> {quickReadBookId ? 'Continuer' : 'Voir mes livres'}</button>
+            </div>
+            <button className="member-logout" onClick={handleLogout}><Icon name="arrowLeft" size={15} /> Se déconnecter</button>
+          </aside>
+
           <section className="account-hero">
             <div className="account-hero-main">
               <div className="account-avatar account-avatar-lg">{user?.name?.charAt(0)?.toUpperCase() || 'U'}</div>

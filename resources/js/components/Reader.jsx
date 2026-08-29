@@ -43,7 +43,7 @@ export default function Reader({ bookId, onClose, returnTo = 'library' }) {
   const [showResumePrompt, setShowResumePrompt] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(null);
-  const [showProgressPanel, setShowProgressPanel] = useState(false);
+  const [showProgressPanel, setShowProgressPanel] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [showToast, setShowToast] = useState(null);
   
@@ -866,6 +866,7 @@ export default function Reader({ bookId, onClose, returnTo = 'library' }) {
           )}
           <span className="reader-badge license"><Icon name="check" size={12} /> {sessionCount} session{sessionCount > 1 ? 's' : ''}</span>
           <span className="reader-badge drm"><Icon name="lock" size={12} /> Licence {user ? 'compte' : 'invite'}</span>
+          <button className={`reader-inspector-toggle${showProgressPanel ? ' active' : ''}`} onClick={() => setShowProgressPanel((visible) => !visible)} title="Afficher ou masquer les informations de lecture"><Icon name="barChart" size={17} /><span>Informations</span></button>
           
           {/* Bouton Lecteur Vocal */}
           <button 
@@ -901,7 +902,7 @@ export default function Reader({ bookId, onClose, returnTo = 'library' }) {
         {/* Prompt de reprise de lecture */}
         {showResumePrompt && renderResumePrompt()}
 
-        <div className="reader-stage">
+        <div className={`reader-stage${showProgressPanel ? ' with-inspector' : ' reader-focus-mode'}`}>
           <div className="reader-watermark">MERCURY · {compactToken(accessToken)}</div>
           {renderStage()}
 
