@@ -38,6 +38,24 @@ function formatDuration(totalSeconds) {
   return `${hours}h ${remainingMinutes}min`;
 }
 
+let receiptLogoPromise;
+function getReceiptLogo() {
+  if (!receiptLogoPromise) {
+    receiptLogoPromise = fetch('/images/logo/logo-100.jpg')
+      .then((response) => {
+        if (!response.ok) throw new Error('Logo Mercury indisponible');
+        return response.blob();
+      })
+      .then((blob) => new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+      }));
+  }
+  return receiptLogoPromise;
+}
+
 export default function AccountPage({ onClose, initialTab = 'overview' }) {
   const { user, logout, updateProfile, fetchOrders, fetchPurchases, resendVerification } = useAuth();
   const { books, purchasedBooks, replacePurchasesFromServer, openModal } = useApp();
@@ -241,7 +259,7 @@ export default function AccountPage({ onClose, initialTab = 'overview' }) {
     openModal('reader', { bookId, returnTo: 'account-library' });
   };
 
-  const generateReceiptPDF = (order) => {
+  const generateReceiptPDF = async (order) => {
     if (!order) return null;
 
     try {
@@ -260,29 +278,31 @@ export default function AccountPage({ onClose, initialTab = 'overview' }) {
 
       doc.setFillColor(255, 255, 255); doc.rect(0, 0, pageWidth, pageHeight, 'F');
       doc.setFillColor(...red); doc.rect(0, 0, pageWidth, 4, 'F');
-      doc.setFont('helvetica', 'bold'); doc.setFontSize(17); doc.setTextColor(...ink);
-      doc.text('MERCURY ÉDITIONS', margin, 23);
-      doc.setFont('helvetica', 'normal'); doc.setFontSize(8); doc.setTextColor(...muted);
-      doc.text('Maison d’édition · Ouagadougou', margin, 30);
+      const logo = await getReceiptLogo();
+      doc.addImage(logo, 'JPEG', (pageWidth - 14) / 2, 9, 14, 14);
       doc.setFont('helvetica', 'bold'); doc.setFontSize(13); doc.setTextColor(...ink);
-      doc.text('REÇU DE PAIEMENT', pageWidth - margin, 23, { align: 'right' });
+      doc.text('MERCURY ÉDITIONS', pageWidth / 2, 30, { align: 'center' });
       doc.setFont('helvetica', 'normal'); doc.setFontSize(8); doc.setTextColor(...muted);
-      doc.text(order.reference || 'Référence indisponible', pageWidth - margin, 30, { align: 'right' });
-      doc.setDrawColor(...line); doc.line(margin, 40, pageWidth - margin, 40);
+      doc.text('Maison d’édition · Ouagadougou', pageWidth / 2, 36, { align: 'center' });
+      doc.setFont('helvetica', 'bold'); doc.setFontSize(11); doc.setTextColor(...ink);
+      doc.text('REÇU DE PAIEMENT', margin, 48);
+      doc.setFont('helvetica', 'normal'); doc.setFontSize(8); doc.setTextColor(...muted);
+      doc.text(order.reference || 'Référence indisponible', pageWidth - margin, 48, { align: 'right' });
+      doc.setDrawColor(...line); doc.line(margin, 54, pageWidth - margin, 54);
 
       doc.setFont('helvetica', 'bold'); doc.setFontSize(8); doc.setTextColor(...ink);
-      doc.text('CLIENT', margin, 54); doc.text('PAIEMENT', 112, 54);
+      doc.text('CLIENT', margin, 66); doc.text('PAIEMENT', 112, 66);
       doc.setFont('helvetica', 'normal'); doc.setTextColor(...muted);
-      doc.text(user?.name || 'Client Mercury', margin, 63);
-      doc.text(user?.email || '-', margin, 69);
-      if (user?.phone) doc.text(user.phone, margin, 75);
-      doc.text(`Date : ${formatDate(order.created_at)}`, 112, 63);
-      doc.text('Moyen : Mobile Money via MynaPay', 112, 69);
-      doc.text(`Transaction : ${order.om_transaction_id || '-'}`, 112, 75);
+      doc.text(user?.name || 'Client Mercury', margin, 75);
+      doc.text(user?.email || '-', margin, 81);
+      if (user?.phone) doc.text(user.phone, margin, 87);
+      doc.text(`Date : ${formatDate(order.created_at)}`, 112, 75);
+      doc.text('Moyen : Mobile Money via MynaPay', 112, 81);
+      doc.text(`Transaction : ${order.om_transaction_id || '-'}`, 112, 87);
       doc.setTextColor(38, 117, 76); doc.setFont('helvetica', 'bold');
-      doc.text('PAYÉ', pageWidth - margin, 84, { align: 'right' });
+      doc.text('PAYÉ', pageWidth - margin, 96, { align: 'right' });
 
-      let yPosition = 99;
+      let yPosition = 109;
       doc.setFont('helvetica', 'bold'); doc.setFontSize(9); doc.setTextColor(...ink);
       doc.text('DÉTAIL DE LA COMMANDE', margin, yPosition); yPosition += 7;
       doc.setFillColor(245, 245, 245); doc.rect(margin, yPosition, contentWidth, 10, 'F');
@@ -331,23 +351,17 @@ export default function AccountPage({ onClose, initialTab = 'overview' }) {
 
   const viewReceipt = (order) => {
     if (!order || order.status !== 'completed') return;
-    const doc = generateReceiptPDF(order);
-    if (doc) {
-      if (receiptModal.pdfUrl) URL.revokeObjectURL(receiptModal.pdfUrl);
-      const pdfUrl = URL.createObjectURL(doc.output('blob'));
-      setReceiptModal({ open: true, order, pdfUrl });
-    }
+    setReceiptModal({ open: true, order, pdfUrl: null });
   };
 
   const closeReceipt = () => {
-    if (receiptModal.pdfUrl) URL.revokeObjectURL(receiptModal.pdfUrl);
     setReceiptModal({ open: false, order: null, pdfUrl: null });
   };
 
-  const downloadReceipt = (order) => {
+  const downloadReceipt = async (order) => {
     if (!order || order.status !== 'completed') return;
     const safeReference = String(order.reference || `CMD-${order.id || 'NA'}`).replace(/[^a-z0-9-_]+/gi, '_');
-    const doc = generateReceiptPDF(order);
+    const doc = await generateReceiptPDF(order);
     if (doc) {
       doc.save(`recu-${safeReference}.pdf`);
     }
@@ -361,11 +375,21 @@ export default function AccountPage({ onClose, initialTab = 'overview' }) {
             <button className="modal-close" onClick={closeReceipt}><Icon name="close" size={18} /></button>
             <div className="receipt-preview-body">
               <h3>Reçu de paiement <span>{receiptModal.order?.reference}</span></h3>
-              <iframe
-                src={receiptModal.pdfUrl}
-                className="receipt-preview-frame"
-                title="Reçu PDF"
-              />
+              <div className="receipt-paper" role="document" aria-label="Aperçu du reçu">
+                <header className="receipt-paper-header">
+                  <img src="/images/logo/logo-100.jpg" alt="Logo Mercury Éditions" />
+                  <strong>MERCURY ÉDITIONS</strong>
+                  <small>Maison d’édition · Ouagadougou</small>
+                </header>
+                <div className="receipt-paper-title"><b>REÇU DE PAIEMENT</b><span>{receiptModal.order?.reference}</span></div>
+                <div className="receipt-paper-meta">
+                  <section><b>CLIENT</b><strong>{user?.name || 'Client Mercury'}</strong><span>{user?.email || '-'}</span>{user?.phone && <span>{user.phone}</span>}</section>
+                  <section><b>PAIEMENT</b><span>Date : {formatDate(receiptModal.order?.created_at)}</span><span>Mobile Money via MynaPay</span><span>Transaction : {receiptModal.order?.om_transaction_id || '-'}</span></section>
+                </div>
+                <table className="receipt-paper-table"><thead><tr><th>OUVRAGE</th><th>FORMAT</th><th>QTÉ</th><th>MONTANT</th></tr></thead><tbody>{(receiptModal.order?.items || []).map((item) => <tr key={item.id || `${item.book_id}-${item.format}`}><td>{item.book?.title || `Livre #${item.book_id}`}</td><td>{item.format === 'physical' ? 'Papier' : 'eBook'}</td><td>{item.quantity || 1}</td><td>{Math.round(Number(item.unit_price || 0) * Number(item.quantity || 1)).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ')} FCFA</td></tr>)}</tbody></table>
+                <div className="receipt-paper-total"><span>Sous-total <b>{Math.max(0, Number(receiptModal.order?.total_amount || 0) - Number(receiptModal.order?.om_fees || 0)).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ')} FCFA</b></span><span>Frais Mobile Money <b>{Number(receiptModal.order?.om_fees || 0).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ')} FCFA</b></span><strong>TOTAL PAYÉ <b>{Number(receiptModal.order?.total_amount || 0).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ')} FCFA</b></strong></div>
+                <footer>Merci pour votre achat. Ce reçu confirme le règlement de votre commande.</footer>
+              </div>
               <div className="receipt-preview-actions">
                 <button className="btn btn-outline" onClick={closeReceipt}>
                   Fermer
