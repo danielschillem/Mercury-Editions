@@ -248,88 +248,78 @@ export default function AccountPage({ onClose, initialTab = 'overview' }) {
       const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
       const pageWidth = doc.internal.pageSize.getWidth();
       const pageHeight = doc.internal.pageSize.getHeight();
-      const margin = 18;
+      const margin = 20;
       const contentWidth = pageWidth - (margin * 2);
-      const red = [157, 39, 35], ink = [47, 37, 33], muted = [119, 105, 98];
-      const line = [226, 216, 209], paper = [249, 246, 242];
-      const money = (value) => `${Number(value || 0).toLocaleString('fr-FR')} FCFA`;
+      const red = [168, 35, 35], ink = [35, 35, 35], muted = [105, 105, 105];
+      const line = [215, 215, 215];
+      // jsPDF's built-in fonts do not support the narrow non-breaking space
+      // emitted by toLocaleString('fr-FR'). A plain ASCII space stays readable.
+      const money = (value) => `${Math.round(Number(value || 0)).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ')} FCFA`;
       const fees = Number(order.om_fees || 0);
       const total = Number(order.total_amount || 0);
 
-      doc.setFillColor(...paper); doc.rect(0, 0, pageWidth, pageHeight, 'F');
-      doc.setFillColor(...ink); doc.rect(0, 0, pageWidth, 47, 'F');
-      doc.setFillColor(...red); doc.rect(0, 0, 7, 47, 'F');
-      doc.setFont('times', 'bold'); doc.setFontSize(20); doc.setTextColor(255, 255, 255);
-      doc.text('MERCURY ÉDITIONS', margin, 20);
-      doc.setFont('helvetica', 'normal'); doc.setFontSize(8); doc.setTextColor(220, 209, 204);
-      doc.text('LIVRES · ÉDITION · LECTURE', margin, 27);
-      doc.setFont('helvetica', 'bold'); doc.setFontSize(12); doc.setTextColor(255, 255, 255);
-      doc.text('REÇU DE PAIEMENT', pageWidth - margin, 19, { align: 'right' });
-      doc.setFontSize(8); doc.setTextColor(222, 210, 205);
-      doc.text(order.reference || 'Référence indisponible', pageWidth - margin, 27, { align: 'right' });
-      doc.setFillColor(40, 119, 84); doc.roundedRect(pageWidth - margin - 31, 32, 31, 8, 2, 2, 'F');
-      doc.setTextColor(255, 255, 255); doc.setFontSize(7);
-      doc.text('PAIEMENT VALIDÉ', pageWidth - margin - 15.5, 37.3, { align: 'center' });
-
-      const cardY = 58, halfWidth = contentWidth / 2 - 4;
-      doc.setFillColor(255, 255, 255); doc.setDrawColor(...line);
-      doc.roundedRect(margin, cardY, halfWidth, 42, 3, 3, 'FD');
-      doc.roundedRect(pageWidth / 2 + 4, cardY, halfWidth, 42, 3, 3, 'FD');
-      doc.setFont('helvetica', 'bold'); doc.setFontSize(7); doc.setTextColor(...red);
-      doc.text('FACTURÉ À', margin + 7, cardY + 10);
-      doc.text('DÉTAILS DU PAIEMENT', pageWidth / 2 + 11, cardY + 10);
-      doc.setTextColor(...ink); doc.setFontSize(10); doc.text(user?.name || 'Client Mercury', margin + 7, cardY + 19);
+      doc.setFillColor(255, 255, 255); doc.rect(0, 0, pageWidth, pageHeight, 'F');
+      doc.setFillColor(...red); doc.rect(0, 0, pageWidth, 4, 'F');
+      doc.setFont('helvetica', 'bold'); doc.setFontSize(17); doc.setTextColor(...ink);
+      doc.text('MERCURY ÉDITIONS', margin, 23);
       doc.setFont('helvetica', 'normal'); doc.setFontSize(8); doc.setTextColor(...muted);
-      doc.text(user?.email || '-', margin + 7, cardY + 26);
-      if (user?.phone) doc.text(user.phone, margin + 7, cardY + 33);
-      const detailX = pageWidth / 2 + 11;
-      doc.text(`Date : ${formatDate(order.created_at)}`, detailX, cardY + 19);
-      doc.text('Moyen : Mobile Money via MynaPay', detailX, cardY + 26);
-      doc.text(`Transaction : ${order.om_transaction_id || '-'}`, detailX, cardY + 33);
+      doc.text('Maison d’édition · Ouagadougou', margin, 30);
+      doc.setFont('helvetica', 'bold'); doc.setFontSize(13); doc.setTextColor(...ink);
+      doc.text('REÇU DE PAIEMENT', pageWidth - margin, 23, { align: 'right' });
+      doc.setFont('helvetica', 'normal'); doc.setFontSize(8); doc.setTextColor(...muted);
+      doc.text(order.reference || 'Référence indisponible', pageWidth - margin, 30, { align: 'right' });
+      doc.setDrawColor(...line); doc.line(margin, 40, pageWidth - margin, 40);
 
-      let yPosition = 114;
-      doc.setFont('times', 'bold'); doc.setFontSize(14); doc.setTextColor(...ink);
-      doc.text('Détail de votre commande', margin, yPosition); yPosition += 9;
-      doc.setFillColor(...ink); doc.roundedRect(margin, yPosition, contentWidth, 11, 2, 2, 'F');
-      doc.setFont('helvetica', 'bold'); doc.setFontSize(7); doc.setTextColor(255, 255, 255);
-      doc.text('OUVRAGE', margin + 6, yPosition + 7); doc.text('FORMAT', 128, yPosition + 7);
+      doc.setFont('helvetica', 'bold'); doc.setFontSize(8); doc.setTextColor(...ink);
+      doc.text('CLIENT', margin, 54); doc.text('PAIEMENT', 112, 54);
+      doc.setFont('helvetica', 'normal'); doc.setTextColor(...muted);
+      doc.text(user?.name || 'Client Mercury', margin, 63);
+      doc.text(user?.email || '-', margin, 69);
+      if (user?.phone) doc.text(user.phone, margin, 75);
+      doc.text(`Date : ${formatDate(order.created_at)}`, 112, 63);
+      doc.text('Moyen : Mobile Money via MynaPay', 112, 69);
+      doc.text(`Transaction : ${order.om_transaction_id || '-'}`, 112, 75);
+      doc.setTextColor(38, 117, 76); doc.setFont('helvetica', 'bold');
+      doc.text('PAYÉ', pageWidth - margin, 84, { align: 'right' });
+
+      let yPosition = 99;
+      doc.setFont('helvetica', 'bold'); doc.setFontSize(9); doc.setTextColor(...ink);
+      doc.text('DÉTAIL DE LA COMMANDE', margin, yPosition); yPosition += 7;
+      doc.setFillColor(245, 245, 245); doc.rect(margin, yPosition, contentWidth, 10, 'F');
+      doc.setFontSize(7); doc.setTextColor(...muted);
+      doc.text('OUVRAGE', margin + 4, yPosition + 6.5); doc.text('FORMAT', 128, yPosition + 6.5);
       doc.text('QTÉ', 157, yPosition + 7, { align: 'center' });
-      doc.text('MONTANT', pageWidth - margin - 6, yPosition + 7, { align: 'right' }); yPosition += 11;
+      doc.text('MONTANT', pageWidth - margin - 4, yPosition + 6.5, { align: 'right' }); yPosition += 10;
 
-      (order.items || []).forEach((item, index) => {
+      (order.items || []).forEach((item) => {
         const title = item.book?.title || `Livre #${item.book_id}`;
         const lines = doc.splitTextToSize(title, 95);
         const rowHeight = Math.max(14, 8 + lines.length * 4);
-        doc.setFillColor(index % 2 ? 255 : 249, index % 2 ? 255 : 247, index % 2 ? 255 : 244);
-        doc.rect(margin, yPosition, contentWidth, rowHeight, 'F');
         doc.setFont('helvetica', 'bold'); doc.setFontSize(8); doc.setTextColor(...ink);
-        doc.text(lines, margin + 6, yPosition + 7);
+        doc.text(lines, margin + 4, yPosition + 7);
         doc.setFont('helvetica', 'normal'); doc.setTextColor(...muted);
         doc.text(item.format === 'physical' ? 'Papier' : 'eBook', 128, yPosition + 7);
         const quantity = Number(item.quantity || 1);
         doc.text(String(quantity), 157, yPosition + 7, { align: 'center' }); doc.setTextColor(...ink);
-        doc.text(money(Number(item.unit_price || 0) * quantity), pageWidth - margin - 6, yPosition + 7, { align: 'right' });
+        doc.text(money(Number(item.unit_price || 0) * quantity), pageWidth - margin - 4, yPosition + 7, { align: 'right' });
+        doc.setDrawColor(...line); doc.line(margin, yPosition + rowHeight, pageWidth - margin, yPosition + rowHeight);
         yPosition += rowHeight;
       });
 
-      yPosition += 10;
-      const summaryX = pageWidth - margin - 78;
-      doc.setFillColor(255, 255, 255); doc.setDrawColor(...line); doc.roundedRect(summaryX, yPosition, 78, 43, 3, 3, 'FD');
+      yPosition += 8;
+      const summaryX = pageWidth - margin - 74;
       doc.setFont('helvetica', 'normal'); doc.setFontSize(8); doc.setTextColor(...muted);
-      doc.text('Sous-total', summaryX + 7, yPosition + 10); doc.text(money(Math.max(0, total - fees)), pageWidth - margin - 7, yPosition + 10, { align: 'right' });
-      doc.text('Frais Mobile Money', summaryX + 7, yPosition + 19); doc.text(money(fees), pageWidth - margin - 7, yPosition + 19, { align: 'right' });
-      doc.setDrawColor(...line); doc.line(summaryX + 7, yPosition + 25, pageWidth - margin - 7, yPosition + 25);
-      doc.setFont('times', 'bold'); doc.setFontSize(12); doc.setTextColor(...red);
-      doc.text('Total payé', summaryX + 7, yPosition + 35); doc.text(money(total), pageWidth - margin - 7, yPosition + 35, { align: 'right' });
+      doc.text('Sous-total', summaryX, yPosition + 7); doc.text(money(Math.max(0, total - fees)), pageWidth - margin, yPosition + 7, { align: 'right' });
+      doc.text('Frais Mobile Money', summaryX, yPosition + 15); doc.text(money(fees), pageWidth - margin, yPosition + 15, { align: 'right' });
+      doc.setDrawColor(...ink); doc.line(summaryX, yPosition + 21, pageWidth - margin, yPosition + 21);
+      doc.setFont('helvetica', 'bold'); doc.setFontSize(10); doc.setTextColor(...ink);
+      doc.text('TOTAL PAYÉ', summaryX, yPosition + 30); doc.text(money(total), pageWidth - margin, yPosition + 30, { align: 'right' });
 
-      doc.setFillColor(244, 236, 231); doc.roundedRect(margin, pageHeight - 51, contentWidth, 20, 3, 3, 'F');
-      doc.setFont('helvetica', 'bold'); doc.setFontSize(8); doc.setTextColor(...ink);
-      doc.text('Merci de faire vivre les livres avec Mercury.', margin + 7, pageHeight - 42);
+      doc.setDrawColor(...line); doc.line(margin, pageHeight - 30, pageWidth - margin, pageHeight - 30);
       doc.setFont('helvetica', 'normal'); doc.setFontSize(7); doc.setTextColor(...muted);
-      doc.text('Ce reçu confirme votre paiement et l’accès associé à votre commande.', margin + 7, pageHeight - 36);
-      doc.setDrawColor(...line); doc.line(margin, pageHeight - 22, pageWidth - margin, pageHeight - 22);
-      doc.setFontSize(6.8); doc.text('Mercury Éditions · Ouagadougou, Burkina Faso', margin, pageHeight - 15);
-      doc.text(`Document généré le ${new Date().toLocaleDateString('fr-FR')}`, pageWidth - margin, pageHeight - 15, { align: 'right' });
+      doc.text('Merci pour votre achat. Ce reçu confirme le règlement de votre commande.', margin, pageHeight - 21);
+      doc.text('Mercury Éditions · Ouagadougou, Burkina Faso', margin, pageHeight - 14);
+      doc.text(`Émis le ${new Date().toLocaleDateString('fr-FR')}`, pageWidth - margin, pageHeight - 14, { align: 'right' });
 
       return doc;
     } catch (err) {
@@ -343,9 +333,15 @@ export default function AccountPage({ onClose, initialTab = 'overview' }) {
     if (!order || order.status !== 'completed') return;
     const doc = generateReceiptPDF(order);
     if (doc) {
-      const pdfUrl = doc.output('bloburi');
+      if (receiptModal.pdfUrl) URL.revokeObjectURL(receiptModal.pdfUrl);
+      const pdfUrl = URL.createObjectURL(doc.output('blob'));
       setReceiptModal({ open: true, order, pdfUrl });
     }
+  };
+
+  const closeReceipt = () => {
+    if (receiptModal.pdfUrl) URL.revokeObjectURL(receiptModal.pdfUrl);
+    setReceiptModal({ open: false, order: null, pdfUrl: null });
   };
 
   const downloadReceipt = (order) => {
@@ -360,9 +356,9 @@ export default function AccountPage({ onClose, initialTab = 'overview' }) {
   return (
     <>
       {receiptModal.open && (
-        <div className="modal-overlay active" onClick={() => setReceiptModal({ open: false, order: null, pdfUrl: null })}>
+        <div className="modal-overlay active" onClick={closeReceipt}>
           <div className="modal-content receipt-preview-modal" onClick={(e) => e.stopPropagation()}>
-            <button className="modal-close" onClick={() => setReceiptModal({ open: false, order: null, pdfUrl: null })}><Icon name="close" size={18} /></button>
+            <button className="modal-close" onClick={closeReceipt}><Icon name="close" size={18} /></button>
             <div className="receipt-preview-body">
               <h3>Reçu de paiement <span>{receiptModal.order?.reference}</span></h3>
               <iframe
@@ -371,10 +367,10 @@ export default function AccountPage({ onClose, initialTab = 'overview' }) {
                 title="Reçu PDF"
               />
               <div className="receipt-preview-actions">
-                <button className="btn btn-outline" onClick={() => setReceiptModal({ open: false, order: null, pdfUrl: null })}>
+                <button className="btn btn-outline" onClick={closeReceipt}>
                   Fermer
                 </button>
-                <button className="btn btn-red" onClick={() => { downloadReceipt(receiptModal.order); setReceiptModal({ open: false, order: null, pdfUrl: null }); }}>
+                <button className="btn btn-red" onClick={() => { downloadReceipt(receiptModal.order); closeReceipt(); }}>
                   <Icon name="download" size={14} /> Télécharger
                 </button>
               </div>
