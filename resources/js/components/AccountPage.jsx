@@ -425,6 +425,7 @@ export default function AccountPage({ onClose, initialTab = 'overview' }) {
             <button className="member-logout" onClick={handleLogout}><Icon name="arrowLeft" size={15} /> Se déconnecter</button>
           </aside>
 
+          <main className="member-workspace">
           <section className="account-hero">
             <div className="account-hero-main">
               <div className="account-avatar account-avatar-lg">{user?.name?.charAt(0)?.toUpperCase() || 'U'}</div>
@@ -875,6 +876,7 @@ export default function AccountPage({ onClose, initialTab = 'overview' }) {
               )}
             </>
           )}
+          </main>
         </div>
       </div>
     </div>
