@@ -15,7 +15,7 @@ export default function MyLibrary({ onClose }) {
       <div className="modal-content" style={{ maxWidth: '800px' }}>
         <button className="modal-close" onClick={onClose}><Icon name="close" size={18} /></button>
         <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
-          <h2 style={{ fontFamily: "'Noto Serif',serif", fontSize: '1.8rem', fontWeight: 900 }}><Icon name="library" size={22} /> Ma Bibliothèque</h2>
+          <h2 style={{ fontFamily: "'Source Serif 4',serif", fontSize: '1.8rem', fontWeight: 900 }}><Icon name="library" size={22} /> Ma Bibliothèque</h2>
           <p style={{ color: 'var(--warm-gray)', fontSize: '0.95rem' }}>{myBooks.length} ouvrage{myBooks.length > 1 ? 's' : ''} acquis</p>
         </div>
 
@@ -49,7 +49,7 @@ export default function MyLibrary({ onClose }) {
                   </div>
                 )}
                 <div style={{ flex: 1 }}>
-                  <h4 style={{ fontFamily: "'Noto Serif',serif", fontSize: '1.05rem', marginBottom: '0.25rem' }}>{item.book.title}</h4>
+                  <h4 style={{ fontFamily: "'Source Serif 4',serif", fontSize: '1.05rem', marginBottom: '0.25rem' }}>{item.book.title}</h4>
                   <p style={{ fontSize: '0.85rem', color: 'var(--warm-gray)', marginBottom: '0.5rem' }}>{item.book.author_name}</p>
                   <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', fontSize: '0.75rem' }}>
                     <span style={{ padding: '2px 8px', background: item.format === 'ebook' ? 'rgba(185,28,28,0.1)' : 'rgba(0,0,0,0.06)', borderRadius: '6px', color: item.format === 'ebook' ? 'var(--mercury-red)' : 'var(--charcoal)' }}>

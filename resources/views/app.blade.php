@@ -26,7 +26,7 @@
     <link rel="manifest" href="/manifest.webmanifest">
     <link rel="icon" type="image/png" href="/images/logo/logo.png">
     <link rel="apple-touch-icon" href="/images/logo/logo.png">
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif:ital,wght@0,400;0,500;0,600;0,700;0,800;1,500&family=Source+Sans+3:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Source+Serif+4:opsz,wght@8..60,500;8..60,600;8..60,700&display=swap" rel="stylesheet">
     @viteReactRefresh
     @vite(['resources/css/app.css', 'resources/js/app.jsx'])
 </head>
