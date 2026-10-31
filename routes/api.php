@@ -80,6 +80,8 @@ Route::middleware('auth')->prefix('customer')->group(function () {
     Route::post('/wishlist/{book}', [CustomerAuthController::class, 'addToWishlist']);
     Route::delete('/wishlist/{book}', [CustomerAuthController::class, 'removeFromWishlist']);
     
+    Route::get('/reader/v1/books/{book}/manifest', \App\Http\Controllers\ReaderManifestController::class)->middleware('throttle:60,1');
+
     // Progression de lecture
     Route::get('/reading-progress', [ReadingProgressController::class, 'index']);
     Route::get('/reading-progress/last', [ReadingProgressController::class, 'lastReading']);

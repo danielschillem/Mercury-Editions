@@ -160,6 +160,32 @@ class ReadingProgressApiTest extends TestCase
             ->assertJsonPath('last_reading.current_page', 44);
     }
 
+    public function test_two_owners_of_the_same_book_keep_separate_positions_even_with_a_foreign_token(): void
+    {
+        $owner = User::factory()->create();
+        $other = User::factory()->create();
+        $book = $this->createBook();
+        $this->createCompletedEbookPurchase($owner, $book, 'POSITION-OWNER-TOKEN');
+        $otherPurchase = $this->createCompletedEbookPurchase($other, $book, 'POSITION-OTHER-TOKEN');
+
+        $this->actingAs($owner)->postJson("/api/customer/books/{$book->id}/progress", [
+            'format' => 'pdf', 'current_page' => 12, 'total_pages' => 120, 'progress_percent' => 10,
+        ])->assertOk();
+        $this->actingAs($other)->withHeader('Authorization', 'Bearer POSITION-OWNER-TOKEN')
+            ->postJson("/api/customer/books/{$book->id}/progress", [
+                'format' => 'pdf', 'current_page' => 24, 'total_pages' => 120, 'progress_percent' => 20,
+            ])->assertOk();
+        $this->getJson("/api/customer/books/{$book->id}/progress")
+            ->assertOk()->assertJsonPath('progress.current_page', 24);
+        $this->assertDatabaseHas('reading_progress', [
+            'user_id' => $other->id, 'book_id' => $book->id,
+            'order_item_id' => $otherPurchase->id, 'current_page' => 24,
+        ]);
+        $this->actingAs($owner)->getJson("/api/customer/books/{$book->id}/progress")
+            ->assertOk()->assertJsonPath('progress.current_page', 12);
+        $this->assertDatabaseCount('reading_progress', 2);
+    }
+
     private function createBook(array $overrides = []): Book
     {
         return Book::create(array_merge([
@@ -174,7 +200,7 @@ class ReadingProgressApiTest extends TestCase
             'pages' => 220,
             'publisher' => 'Mercury Editions',
             'language' => 'Francais',
-            'isbn' => '978-2-35926-' . random_int(100, 999) . '-' . random_int(0, 9),
+            'isbn' => '978-2-35926-'.random_int(100, 999).'-'.random_int(0, 9),
             'tags' => ['lecture', 'progression'],
             'description' => 'Description de test pour la progression de lecture.',
             'summary' => 'Resume de test de progression.',
@@ -185,7 +211,7 @@ class ReadingProgressApiTest extends TestCase
     private function createCompletedEbookPurchase(User $user, Book $book, string $token): OrderItem
     {
         $order = Order::create([
-            'reference' => 'MRC-RDG-' . strtoupper((string) dechex(random_int(0x10000, 0xFFFFF))),
+            'reference' => 'MRC-RDG-'.strtoupper((string) dechex(random_int(0x10000, 0xFFFFF))),
             'user_id' => $user->id,
             'buyer_phone' => $user->phone ?? '70000000',
             'buyer_name' => $user->name,
@@ -193,7 +219,7 @@ class ReadingProgressApiTest extends TestCase
             'total_amount' => $book->price,
             'om_fees' => 0,
             'status' => 'completed',
-            'om_transaction_id' => 'OM-' . random_int(100000, 999999),
+            'om_transaction_id' => 'OM-'.random_int(100000, 999999),
         ]);
 
         return OrderItem::create([

@@ -3,12 +3,6 @@ import { useApp } from '../context/AppContext';
 import { useAuth } from '../context/AuthContext';
 import Icon from './Icons';
 
-function compactToken(token) {
-  if (!token) return 'LICENCE';
-  const value = token.toUpperCase();
-  return value.length <= 12 ? value : `${value.slice(0, 8)}...${value.slice(-4)}`;
-}
-
 function formatReadingTime(seconds) {
   if (!seconds || seconds < 60) return 'Moins d\'1 min';
   const minutes = Math.floor(seconds / 60);
@@ -68,7 +62,7 @@ export default function Reader({ bookId, onClose, returnTo = 'library' }) {
 
   const purchase = purchasedBooks.find((entry) => Number(entry.bookId) === safeBookId && entry.format === 'ebook');
   const book = books.find((entry) => Number(entry.id) === safeBookId);
-  const purchaseToken = purchase?.accessToken || '';
+  const purchaseToken = user ? '' : (purchase?.accessToken || '');
   const ebookBookIds = useMemo(() => {
     const source = [...purchasedBooks]
       .filter((entry) => entry?.format === 'ebook')
@@ -414,7 +408,7 @@ export default function Reader({ bookId, onClose, returnTo = 'library' }) {
     if (readerState.status !== 'ready' || !book) return;
 
     const payload = readerState.payload;
-    const token = payload?.purchase?.access_token || purchaseToken || '';
+    const token = purchaseToken;
     const formats = payload?.reader?.available_formats || {};
 
     ['pdf', 'epub'].forEach((fmt) => {
@@ -605,21 +599,12 @@ export default function Reader({ bookId, onClose, returnTo = 'library' }) {
   const currentFormat = activeFormat && availableFormats[activeFormat]
     ? activeFormat
     : (availableFormats.pdf ? 'pdf' : (availableFormats.epub ? 'epub' : null));
-  const accessToken = readerState.payload.purchase?.access_token || purchaseToken || '';
   const pdfUrl = blobUrls.pdf || '';
   const epubUrl = blobUrls.epub || '';
-  const buyerPhone = readerState.payload.purchase?.buyer_phone || purchase?.buyerPhone || user?.phone || '-';
-  const transactionId = readerState.payload.purchase?.transaction_id || purchase?.txnId || '-';
   const hasRealFile = availableFormats.pdf || availableFormats.epub;
   const formatLabel = currentFormat === 'epub' ? 'EPUB' : currentFormat === 'pdf' ? 'PDF' : 'Extrait';
   const sessionCount = progress?.sessions_count || purchase?.readSessions || 0;
   const readingTime = progress?.reading_time || 0;
-
-  const openCurrentFormat = () => {
-    const url = currentFormat === 'epub' ? epubUrl : pdfUrl;
-    if (!url) return;
-    window.open(url, '_blank', 'noopener,noreferrer');
-  };
 
   const renderResumePrompt = () => (
     <div className="reader-resume-overlay">
@@ -769,9 +754,6 @@ export default function Reader({ bookId, onClose, returnTo = 'library' }) {
           >
             <Icon name="skipForward" size={18} />
           </button>
-          <button className="reader-link-btn" onClick={openCurrentFormat}>
-            <Icon name="share" size={14} /> Ouvrir dans un onglet
-          </button>
         </div>
       </div>
     </div>
@@ -783,7 +765,7 @@ export default function Reader({ bookId, onClose, returnTo = 'library' }) {
         <div className="reader-epub-copy">
           <span className="reader-panel-kicker">Format EPUB</span>
           <h2>{book.title}</h2>
-          <p>Le fichier EPUB original est disponible. Le rendu dépend du navigateur utilisé, donc une ouverture dans un onglet dédié reste proposée.</p>
+          <p>Le rendu EPUB intégré dépend des capacités de votre navigateur. Un moteur EPUB dédié est prévu.</p>
         </div>
         <div className="reader-epub-preview">
           {!epubUrl ? (
@@ -800,9 +782,6 @@ export default function Reader({ bookId, onClose, returnTo = 'library' }) {
           )}
         </div>
         <div className="reader-file-actions">
-          <button className="reader-link-btn" onClick={openCurrentFormat}>
-            <Icon name="share" size={14} /> Ouvrir l'EPUB dans un onglet
-          </button>
           <button
             className="reader-link-btn subtle"
             onClick={handleNextBook}
@@ -903,7 +882,7 @@ export default function Reader({ bookId, onClose, returnTo = 'library' }) {
         {showResumePrompt && renderResumePrompt()}
 
         <div className={`reader-stage${showProgressPanel ? ' with-inspector' : ' reader-focus-mode'}`}>
-          <div className="reader-watermark">MERCURY · {compactToken(accessToken)}</div>
+          <div className="reader-watermark">MERCURY · Usage personnel</div>
           {renderStage()}
 
           <aside className={`reader-sidepanel ${showProgressPanel ? 'show-stats' : ''}`}>
@@ -969,16 +948,8 @@ export default function Reader({ bookId, onClose, returnTo = 'library' }) {
                 <strong>{availableFormats.pdf && availableFormats.epub ? 'PDF / EPUB' : availableFormats.pdf ? 'PDF' : availableFormats.epub ? 'EPUB' : 'Aucun fichier'}</strong>
               </div>
               <div className="reader-meta-row">
-                <span>Licence</span>
-                <strong>{compactToken(accessToken)}</strong>
-              </div>
-              <div className="reader-meta-row">
-                <span>Téléphone</span>
-                <strong>{buyerPhone}</strong>
-              </div>
-              <div className="reader-meta-row">
-                <span>Transaction</span>
-                <strong>{transactionId}</strong>
+                <span>Droit de lecture</span>
+                <strong>Accès personnel vérifié</strong>
               </div>
             </section>
 
@@ -987,11 +958,7 @@ export default function Reader({ bookId, onClose, returnTo = 'library' }) {
                 <Icon name="shield" size={16} />
                 <span>Accès contrôlé côté serveur. Les fichiers sont servis uniquement après vérification de la commande.</span>
               </div>
-              {hasRealFile && (
-                <button className="reader-link-btn" onClick={openCurrentFormat}>
-                  <Icon name="share" size={14} /> Ouvrir la source actuelle
-                </button>
-              )}
+
             </section>
 
             {/* Actions rapides */}
