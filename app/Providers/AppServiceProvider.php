@@ -14,6 +14,9 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
+        $this->app->bind(\App\Domain\Reader\Contracts\ReadingAccess::class, \App\Domain\Reader\Infrastructure\PurchaseReadingAccess::class);
+        $this->app->bind(\App\Domain\Reader\Contracts\ReadingPositionStore::class, \App\Domain\Reader\Infrastructure\EloquentReadingPositionStore::class);
+
         // Singleton pour le service de cache des livres
         $this->app->singleton(BookCacheService::class, function ($app) {
             return new BookCacheService();

@@ -100,7 +100,7 @@ class BookReaderAccessTest extends TestCase
         $this->getJson("/api/books/{$book->id}/reader?token=GUEST-TOKEN-002")
             ->assertOk()
             ->assertJsonPath('access', true)
-            ->assertJsonPath('purchase.access_token', 'GUEST-TOKEN-002');
+            ->assertJsonMissingPath('purchase');
 
         $guestFileResponse = $this->get("/api/books/{$book->id}/reader/pdf?token=GUEST-TOKEN-002");
 
@@ -125,6 +125,95 @@ class BookReaderAccessTest extends TestCase
         $this->assertArrayNotHasKey('ebook_epub_path', $detail);
     }
 
+    public function test_connected_non_owner_cannot_reuse_another_purchase_token(): void
+    {
+        $owner = User::factory()->create();
+        $other = User::factory()->create();
+        $book = $this->createBook();
+        $order = Order::create([
+            'reference' => 'READER-ISOLATION', 'user_id' => $owner->id,
+            'buyer_phone' => '70000000', 'total_amount' => 4200, 'status' => 'completed',
+        ]);
+        OrderItem::create([
+            'order_id' => $order->id, 'book_id' => $book->id,
+            'format' => 'ebook', 'unit_price' => 4200, 'access_token' => 'OTHER-OWNER-TOKEN',
+        ]);
+
+        $this->actingAs($other)->withHeader('Authorization', 'Bearer OTHER-OWNER-TOKEN');
+        $this->getJson("/api/books/{$book->id}/reader")->assertForbidden();
+        $this->getJson("/api/books/{$book->id}/reader/pdf")->assertForbidden();
+        $this->getJson("/api/customer/books/{$book->id}/verify-access")->assertJsonPath('access', false);
+        $this->getJson("/api/customer/books/{$book->id}/progress")->assertForbidden();
+        $this->postJson("/api/customer/books/{$book->id}/progress", [
+            'format' => 'pdf', 'current_page' => 1, 'progress_percent' => 0,
+        ])->assertForbidden();
+        $this->assertDatabaseMissing('reading_progress', ['user_id' => $other->id, 'book_id' => $book->id]);
+        $this->getJson("/api/customer/reader/v1/books/{$book->id}/manifest")->assertForbidden();
+
+        $this->actingAs($owner)->getJson("/api/customer/reader/v1/books/{$book->id}/manifest")
+            ->assertOk()->assertJsonMissingPath('purchase')
+            ->assertJsonPath('capabilities.download_original', false)
+            ->assertJsonPath('delivery.status', 'pending_secure_derivatives');
+
+        $order->update(['status' => 'failed']);
+        $this->getJson("/api/books/{$book->id}/reader")->assertForbidden();
+        $this->getJson("/api/customer/reader/v1/books/{$book->id}/manifest")->assertForbidden();
+    }
+
+    public function test_strict_manifest_requires_authentication_even_with_legacy_token(): void
+    {
+        $book = $this->createBook();
+        $this->getJson("/api/customer/reader/v1/books/{$book->id}/manifest?token=guest")
+            ->assertUnauthorized();
+    }
+
+    public function test_legacy_guest_compatibility_can_be_disabled_without_blocking_the_owner(): void
+    {
+        $owner = User::factory()->create();
+        $book = $this->createBook();
+        $order = Order::create([
+            'reference' => 'READER-LEGACY', 'user_id' => $owner->id,
+            'buyer_phone' => '70000000', 'total_amount' => 4200, 'status' => 'completed',
+        ]);
+        OrderItem::create([
+            'order_id' => $order->id, 'book_id' => $book->id,
+            'format' => 'ebook', 'unit_price' => 4200, 'access_token' => 'LEGACY-TOKEN',
+        ]);
+        config(['reader.legacy_query_tokens' => false]);
+        $this->getJson("/api/books/{$book->id}/reader?token=LEGACY-TOKEN")->assertForbidden();
+        $this->withHeader('Authorization', 'Bearer LEGACY-TOKEN')
+            ->getJson("/api/books/{$book->id}/reader")->assertOk()->assertJsonMissingPath('purchase');
+        config(['reader.legacy_guest_tokens' => false]);
+        $this->getJson("/api/books/{$book->id}/reader")->assertForbidden();
+        $this->actingAs($owner)->getJson("/api/books/{$book->id}/reader")->assertOk();
+    }
+
+    public function test_only_a_completed_ebook_purchase_for_this_book_grants_access(): void
+    {
+        $user = User::factory()->create();
+        $book = $this->createBook();
+        $otherBook = $this->createBook();
+        $order = Order::create([
+            'reference' => 'READER-PURCHASE-MATRIX', 'user_id' => $user->id,
+            'buyer_phone' => '70000000', 'total_amount' => 4200, 'status' => 'pending',
+        ]);
+        $item = OrderItem::create([
+            'order_id' => $order->id, 'book_id' => $book->id,
+            'format' => 'ebook', 'unit_price' => 4200, 'access_token' => 'MATRIX-TOKEN',
+        ]);
+        $this->actingAs($user)->getJson("/api/books/{$book->id}/reader")->assertForbidden();
+        $order->update(['status' => 'failed']);
+        $this->getJson("/api/books/{$book->id}/reader")->assertForbidden();
+        $order->update(['status' => 'completed']);
+        $item->update(['format' => 'physical']);
+        $this->getJson("/api/books/{$book->id}/reader")->assertForbidden();
+        $item->update(['format' => 'ebook']);
+        $this->getJson("/api/books/{$otherBook->id}/reader")->assertForbidden();
+        $this->getJson("/api/books/{$book->id}/reader")->assertOk()
+            ->assertJsonMissingPath('purchase')
+            ->assertHeader('Cache-Control', 'no-store, private');
+    }
+
     private function createBook(array $overrides = []): Book
     {
         return Book::create(array_merge([
@@ -139,7 +228,7 @@ class BookReaderAccessTest extends TestCase
             'pages' => 240,
             'publisher' => 'Mercury Editions',
             'language' => 'Francais',
-            'isbn' => '978-2-35926-' . random_int(100, 999) . '-' . random_int(0, 9),
+            'isbn' => '978-2-35926-'.random_int(100, 999).'-'.random_int(0, 9),
             'tags' => ['lecteur', 'ebook'],
             'description' => 'Description de test pour le lecteur securise.',
             'summary' => 'Resume de test pour afficher un extrait quand aucun fichier n est disponible.',

@@ -16,38 +16,10 @@ trait ResolvesBookReaderAccess
         $authHeader = (string) $request->header('Authorization', '');
         $token = str_starts_with($authHeader, 'Bearer ')
             ? trim(substr($authHeader, 7))
-            : trim((string) $request->query('token', ''));
+            : (config('reader.legacy_query_tokens') ? trim((string) $request->query('token', '')) : '');
 
-        if ($token !== '') {
-            $tokenPurchase = OrderItem::query()
-                ->where('book_id', $book->id)
-                ->where('format', 'ebook')
-                ->where('access_token', $token)
-                ->whereHas('order', fn ($query) => $query->where('status', 'completed'))
-                ->with('order')
-                ->latest('id')
-                ->first();
-
-            if ($tokenPurchase) {
-                return $tokenPurchase;
-            }
-        }
-
-        $user = $request->user();
-
-        if (! $user) {
-            return null;
-        }
-
-        return OrderItem::query()
-            ->where('book_id', $book->id)
-            ->where('format', 'ebook')
-            ->whereHas('order', fn ($query) => $query
-                ->where('user_id', $user->id)
-                ->where('status', 'completed'))
-            ->with('order')
-            ->latest('id')
-            ->first();
+        return app(\App\Domain\Reader\Contracts\ReadingAccess::class)
+            ->purchaseFor($request->user(), $book, $token);
     }
 
     private function resolveStoredAsset(?string $storedPath): ?array

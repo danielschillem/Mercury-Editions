@@ -39,9 +39,7 @@ class ReadingProgressController extends Controller
             ], 403);
         }
 
-        $progress = ReadingProgress::where('user_id', $user->id)
-            ->where('book_id', $book->id)
-            ->first();
+        $progress = app(\App\Domain\Reader\Contracts\ReadingPositionStore::class)->findFor($user, $book);
 
         if (! $progress) {
             return response()->json([

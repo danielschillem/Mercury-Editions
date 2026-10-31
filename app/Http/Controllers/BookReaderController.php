@@ -44,12 +44,7 @@ class BookReaderController extends Controller
                 'preferred_format' => $pdf !== null ? 'pdf' : ($epub !== null ? 'epub' : null),
                 'fallback_excerpt' => $pdf === null && $epub === null,
             ],
-            'purchase' => [
-                'access_token' => $purchase->access_token,
-                'buyer_phone' => $purchase->order?->buyer_phone,
-                'transaction_id' => $purchase->order?->om_transaction_id,
-            ],
-        ]);
+        ])->header('Cache-Control', 'private, no-store')->header('Referrer-Policy', 'no-referrer');
     }
 
     public function file(Request $request, Book $book, string $format): StreamedResponse|JsonResponse
@@ -79,7 +74,7 @@ class BookReaderController extends Controller
             $asset['filename'],
             [
                 'Content-Type' => $asset['mime'],
-                'Cache-Control' => 'private, max-age=0, must-revalidate',
+                'Cache-Control' => 'private, no-store',
                 'Pragma' => 'no-cache',
                 'X-Robots-Tag' => 'noindex, nofollow',
                 'Referrer-Policy' => 'no-referrer',
